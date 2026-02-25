@@ -1,676 +1,946 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ライフプランニングシステム | Money Advice Center</title>
-<meta name="description" content="FP・IFA向けライフプランニング表作成システム">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<style>
-:root {
-  --bg-primary: #0f1117;
-  --bg-secondary: #1a1d2e;
-  --bg-card: rgba(26, 29, 46, 0.8);
-  --bg-glass: rgba(255,255,255,0.05);
-  --border-glass: rgba(255,255,255,0.1);
-  --text-primary: #e8eaf0;
-  --text-secondary: #9ca3af;
-  --text-muted: #6b7280;
-  --accent: #6366f1;
-  --accent-light: #818cf8;
-  --accent-glow: rgba(99,102,241,0.3);
-  --success: #22c55e;
-  --warning: #f59e0b;
-  --danger: #ef4444;
-  --gradient-1: linear-gradient(135deg, #6366f1, #8b5cf6);
-  --gradient-2: linear-gradient(135deg, #0f1117 0%, #1a1d2e 100%);
-  --radius: 12px;
-  --shadow: 0 8px 32px rgba(0,0,0,0.3);
-}
-* { margin:0; padding:0; box-sizing:border-box; }
-body {
-  font-family: 'Noto Sans JP', 'Inter', sans-serif;
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  min-height: 100vh;
-  overflow-x: hidden;
-}
-body::before {
-  content: '';
-  position: fixed; top: -50%; left: -50%;
-  width: 200%; height: 200%;
-  background: radial-gradient(circle at 30% 30%, rgba(99,102,241,0.08) 0%, transparent 50%),
-              radial-gradient(circle at 70% 70%, rgba(139,92,246,0.06) 0%, transparent 50%);
-  z-index: 0;
-  pointer-events: none;
-}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ライフプランニングシステム | Money Advice Center</title>
+  <meta name="description" content="FP・IFA向けライフプランニング表作成システム">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Inter:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0f1117;
+      --bg-secondary: #1a1d2e;
+      --bg-card: rgba(26, 29, 46, 0.8);
+      --bg-glass: rgba(255, 255, 255, 0.05);
+      --border-glass: rgba(255, 255, 255, 0.1);
+      --text-primary: #e8eaf0;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
+      --accent: #6366f1;
+      --accent-light: #818cf8;
+      --accent-glow: rgba(99, 102, 241, 0.3);
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --gradient-1: linear-gradient(135deg, #6366f1, #8b5cf6);
+      --gradient-2: linear-gradient(135deg, #0f1117 0%, #1a1d2e 100%);
+      --radius: 12px;
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
 
-/* Header */
-.header {
-  background: var(--bg-card);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border-glass);
-  padding: 16px 32px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: sticky; top: 0; z-index: 100;
-}
-.header h1 {
-  font-size: 1.3rem;
-  font-weight: 700;
-  background: var(--gradient-1);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  letter-spacing: 0.02em;
-}
-.header .subtitle { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-/* Progress Stepper */
-.stepper {
-  display: flex; align-items: center; gap: 8px;
-  padding: 24px 32px;
-  position: relative; z-index: 1;
-}
-.step-item {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 0.8rem; color: var(--text-muted);
-  cursor: pointer; transition: all 0.3s;
-}
-.step-item.active { color: var(--accent-light); font-weight: 600; }
-.step-item.completed { color: var(--success); }
-.step-circle {
-  width: 32px; height: 32px;
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 0.8rem; font-weight: 600;
-  border: 2px solid var(--text-muted);
-  transition: all 0.3s;
-}
-.step-item.active .step-circle {
-  border-color: var(--accent);
-  background: var(--accent-glow);
-  color: var(--accent-light);
-  box-shadow: 0 0 16px var(--accent-glow);
-}
-.step-item.completed .step-circle {
-  border-color: var(--success);
-  background: rgba(34,197,94,0.15);
-  color: var(--success);
-}
-.step-line {
-  width: 40px; height: 2px;
-  background: var(--text-muted);
-  opacity: 0.3;
-}
-.step-line.completed { background: var(--success); opacity: 1; }
+    body {
+      font-family: 'Noto Sans JP', 'Inter', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
 
-/* Phase containers */
-.phase { display: none; position: relative; z-index: 1; }
-.phase.active { display: block; }
+    body::before {
+      content: '';
+      position: fixed;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle at 30% 30%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 70% 70%, rgba(139, 92, 246, 0.06) 0%, transparent 50%);
+      z-index: 0;
+      pointer-events: none;
+    }
 
-/* Form styles */
-.form-container {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 0 32px 60px;
-}
-.form-card {
-  background: var(--bg-card);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--border-glass);
-  border-radius: var(--radius);
-  padding: 32px;
-  margin-bottom: 24px;
-  box-shadow: var(--shadow);
-}
-.form-card h2 {
-  font-size: 1.1rem; font-weight: 600;
-  margin-bottom: 24px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--border-glass);
-  display: flex; align-items: center; gap: 10px;
-}
-.form-card h2 .icon {
-  width: 36px; height: 36px;
-  border-radius: 10px;
-  background: var(--gradient-1);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1rem;
-}
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-.form-group { display: flex; flex-direction: column; gap: 6px; }
-.form-group.full { grid-column: 1 / -1; }
-.form-group label {
-  font-size: 0.8rem; font-weight: 500;
-  color: var(--text-secondary);
-}
-.form-group input, .form-group select {
-  background: var(--bg-glass);
-  border: 1px solid var(--border-glass);
-  border-radius: 8px;
-  padding: 10px 14px;
-  color: var(--text-primary);
-  font-size: 0.9rem;
-  font-family: inherit;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  outline: none;
-}
-.form-group input:focus, .form-group select:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-glow);
-}
-.form-group input::placeholder { color: var(--text-muted); }
-.form-group select option { background: var(--bg-secondary); }
+    /* Header */
+    .header {
+      background: var(--bg-card);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-glass);
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
 
-/* Children list */
-.children-list { display: flex; flex-direction: column; gap: 12px; }
-.child-row {
-  display: flex; gap: 12px; align-items: center;
-  background: var(--bg-glass);
-  padding: 12px; border-radius: 8px;
-  border: 1px solid var(--border-glass);
-}
-.child-row input { flex: 1; }
-.btn-remove {
-  width: 32px; height: 32px;
-  border-radius: 8px;
-  border: 1px solid rgba(239,68,68,0.3);
-  background: rgba(239,68,68,0.1);
-  color: var(--danger);
-  cursor: pointer; font-size: 1.1rem;
-  display: flex; align-items: center; justify-content: center;
-  transition: all 0.2s;
-}
-.btn-remove:hover { background: rgba(239,68,68,0.2); }
+    .header h1 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      background: var(--gradient-1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 0.02em;
+    }
 
-/* Life events */
-.event-row {
-  display: flex; gap: 12px; align-items: center;
-  background: var(--bg-glass);
-  padding: 12px; border-radius: 8px;
-  border: 1px solid var(--border-glass);
-  margin-bottom: 8px;
-}
-.event-row input, .event-row select { flex: 1; }
+    .header .subtitle {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
 
-/* Buttons */
-.btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 12px 28px;
-  border-radius: 10px;
-  font-size: 0.9rem; font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-  border: none;
-  transition: all 0.3s;
-}
-.btn-primary {
-  background: var(--gradient-1);
-  color: white;
-  box-shadow: 0 4px 16px var(--accent-glow);
-}
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 24px var(--accent-glow);
-}
-.btn-secondary {
-  background: var(--bg-glass);
-  border: 1px solid var(--border-glass);
-  color: var(--text-primary);
-}
-.btn-secondary:hover { background: rgba(255,255,255,0.1); }
-.btn-success {
-  background: linear-gradient(135deg, #22c55e, #16a34a);
-  color: white;
-  box-shadow: 0 4px 16px rgba(34,197,94,0.3);
-}
-.btn-add {
-  background: rgba(99,102,241,0.1);
-  border: 1px dashed var(--accent);
-  color: var(--accent-light);
-  padding: 10px 20px;
-  border-radius: 8px;
-  cursor: pointer; font-family: inherit;
-  font-size: 0.85rem;
-  transition: all 0.2s;
-  width: 100%;
-}
-.btn-add:hover { background: rgba(99,102,241,0.2); }
-.form-actions {
-  display: flex; justify-content: space-between;
-  margin-top: 32px;
-}
+    /* Progress Stepper */
+    .stepper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 24px 32px;
+      position: relative;
+      z-index: 1;
+    }
 
-/* Dashboard layout */
-.dashboard {
-  display: flex;
-  height: calc(100vh - 120px);
-}
-.sidebar {
-  width: 320px; min-width: 320px;
-  background: var(--bg-card);
-  backdrop-filter: blur(20px);
-  border-right: 1px solid var(--border-glass);
-  padding: 24px;
-  overflow-y: auto;
-}
-.sidebar h3 {
-  font-size: 0.95rem; font-weight: 600;
-  margin-bottom: 20px;
-  display: flex; align-items: center; gap: 8px;
-}
-.param-group {
-  margin-bottom: 20px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--border-glass);
-}
-.param-group:last-child { border-bottom: none; }
-.param-label {
-  display: flex; justify-content: space-between;
-  font-size: 0.8rem; color: var(--text-secondary);
-  margin-bottom: 8px;
-}
-.param-value {
-  color: var(--accent-light);
-  font-weight: 600;
-}
-input[type="range"] {
-  width: 100%;
-  height: 6px;
-  -webkit-appearance: none;
-  background: rgba(255,255,255,0.1);
-  border-radius: 3px;
-  outline: none;
-}
-input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 18px; height: 18px;
-  border-radius: 50%;
-  background: var(--gradient-1);
-  box-shadow: 0 0 8px var(--accent-glow);
-  cursor: pointer;
-}
-.main-content {
-  flex: 1;
-  overflow: auto;
-  padding: 24px;
-}
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
 
-/* Life plan table */
-.table-wrapper {
-  overflow-x: auto;
-  margin-bottom: 24px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border-glass);
-  background: var(--bg-card);
-}
-#lifeplan-table {
-  border-collapse: collapse;
-  font-size: 0.72rem;
-  white-space: nowrap;
-  width: max-content;
-  min-width: 100%;
-}
-#lifeplan-table th, #lifeplan-table td {
-  padding: 6px 10px;
-  border: 1px solid rgba(255,255,255,0.06);
-  text-align: right;
-}
-#lifeplan-table th {
-  background: rgba(99,102,241,0.15);
-  color: var(--accent-light);
-  font-weight: 600;
-  position: sticky; left: 0; z-index: 2;
-}
-#lifeplan-table td:first-child {
-  background: var(--bg-secondary);
-  font-weight: 500;
-  text-align: left;
-  position: sticky; left: 0; z-index: 1;
-  min-width: 120px;
-}
-#lifeplan-table .section-header {
-  background: rgba(99,102,241,0.08) !important;
-  font-weight: 700;
-  color: var(--accent-light);
-}
-#lifeplan-table .total-row {
-  background: rgba(99,102,241,0.05) !important;
-  font-weight: 700;
-}
-#lifeplan-table .balance-row {
-  font-weight: 700; font-size: 0.78rem;
-}
-#lifeplan-table .negative { color: var(--danger); }
-#lifeplan-table .positive { color: var(--success); }
-#lifeplan-table .event-cell {
-  font-size: 0.65rem;
-  color: var(--warning);
-  text-align: center;
-  max-width: 80px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+    .step-item.active {
+      color: var(--accent-light);
+      font-weight: 600;
+    }
 
-/* Chart */
-.chart-container {
-  background: var(--bg-card);
-  border: 1px solid var(--border-glass);
-  border-radius: var(--radius);
-  padding: 20px;
-  margin-bottom: 24px;
-}
+    .step-item.completed {
+      color: var(--success);
+    }
 
-/* PDF */
-.pdf-section { padding: 20px; }
-.pdf-header {
-  text-align: center; margin-bottom: 20px;
-  padding-bottom: 12px;
-  border-bottom: 2px solid var(--accent);
-}
-#pdf-target { background: white; color: #1a1a1a; padding: 24px; display: none; }
-#pdf-target table {
-  border-collapse: collapse; width: 100%; font-size: 9px;
-}
-#pdf-target th, #pdf-target td {
-  padding: 4px 6px; border: 1px solid #ccc; text-align: right;
-}
-#pdf-target th { background: #4f46e5; color: white; }
-#pdf-target td:first-child { text-align: left; font-weight: 600; background: #f3f4f6; }
-#pdf-target .negative { color: #dc2626; }
-#pdf-target .positive { color: #16a34a; }
-#pdf-target .section-header { background: #e0e7ff !important; font-weight: 700; color: #4338ca; }
-#pdf-target .total-row { background: #f0f0f0 !important; font-weight: 700; }
-#pdf-target .event-cell { font-size: 7px; color: #d97706; text-align: center; }
+    .step-circle {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border: 2px solid var(--text-muted);
+      transition: all 0.3s;
+    }
 
-/* Responsive */
-@media (max-width: 1024px) {
-  .dashboard { flex-direction: column; height: auto; }
-  .sidebar { width: 100%; min-width: auto; border-right: none; border-bottom: 1px solid var(--border-glass); }
-}
+    .step-item.active .step-circle {
+      border-color: var(--accent);
+      background: var(--accent-glow);
+      color: var(--accent-light);
+      box-shadow: 0 0 16px var(--accent-glow);
+    }
 
-/* Animations */
-@keyframes fadeIn { from { opacity:0; transform:translateY(10px) } to { opacity:1; transform:translateY(0) } }
-.form-card { animation: fadeIn 0.4s ease; }
-</style>
+    .step-item.completed .step-circle {
+      border-color: var(--success);
+      background: rgba(34, 197, 94, 0.15);
+      color: var(--success);
+    }
+
+    .step-line {
+      width: 40px;
+      height: 2px;
+      background: var(--text-muted);
+      opacity: 0.3;
+    }
+
+    .step-line.completed {
+      background: var(--success);
+      opacity: 1;
+    }
+
+    /* Phase containers */
+    .phase {
+      display: none;
+      position: relative;
+      z-index: 1;
+    }
+
+    .phase.active {
+      display: block;
+    }
+
+    /* Form styles */
+    .form-container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 32px 60px;
+    }
+
+    .form-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius);
+      padding: 32px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .form-card h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 24px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-glass);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .form-card h2 .icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--gradient-1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group.full {
+      grid-column: 1 / -1;
+    }
+
+    .form-group label {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .form-group input,
+    .form-group select {
+      background: var(--bg-glass);
+      border: 1px solid var(--border-glass);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      font-family: inherit;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .form-group input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .form-group select option {
+      background: var(--bg-secondary);
+    }
+
+    /* Children list */
+    .children-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .child-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      background: var(--bg-glass);
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-glass);
+    }
+
+    .child-row input {
+      flex: 1;
+    }
+
+    .btn-remove {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--danger);
+      cursor: pointer;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .btn-remove:hover {
+      background: rgba(239, 68, 68, 0.2);
+    }
+
+    /* Life events */
+    .event-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      background: var(--bg-glass);
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-glass);
+      margin-bottom: 8px;
+    }
+
+    .event-row input,
+    .event-row select {
+      flex: 1;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 28px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      transition: all 0.3s;
+    }
+
+    .btn-primary {
+      background: var(--gradient-1);
+      color: white;
+      box-shadow: 0 4px 16px var(--accent-glow);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px var(--accent-glow);
+    }
+
+    .btn-secondary {
+      background: var(--bg-glass);
+      border: 1px solid var(--border-glass);
+      color: var(--text-primary);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: white;
+      box-shadow: 0 4px 16px rgba(34, 197, 94, 0.3);
+    }
+
+    .btn-add {
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px dashed var(--accent);
+      color: var(--accent-light);
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+      width: 100%;
+    }
+
+    .btn-add:hover {
+      background: rgba(99, 102, 241, 0.2);
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 32px;
+    }
+
+    /* Dashboard layout */
+    .dashboard {
+      display: flex;
+      height: calc(100vh - 120px);
+    }
+
+    .sidebar {
+      width: 320px;
+      min-width: 320px;
+      background: var(--bg-card);
+      backdrop-filter: blur(20px);
+      border-right: 1px solid var(--border-glass);
+      padding: 24px;
+      overflow-y: auto;
+    }
+
+    .sidebar h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .param-group {
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-glass);
+    }
+
+    .param-group:last-child {
+      border-bottom: none;
+    }
+
+    .param-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+
+    .param-value {
+      color: var(--accent-light);
+      font-weight: 600;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 6px;
+      -webkit-appearance: none;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--gradient-1);
+      box-shadow: 0 0 8px var(--accent-glow);
+      cursor: pointer;
+    }
+
+    .main-content {
+      flex: 1;
+      overflow: auto;
+      padding: 24px;
+    }
+
+    /* Life plan table */
+    .table-wrapper {
+      overflow-x: auto;
+      margin-bottom: 24px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border-glass);
+      background: var(--bg-card);
+    }
+
+    #lifeplan-table {
+      border-collapse: collapse;
+      font-size: 0.72rem;
+      white-space: nowrap;
+      width: max-content;
+      min-width: 100%;
+    }
+
+    #lifeplan-table th,
+    #lifeplan-table td {
+      padding: 6px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      text-align: right;
+    }
+
+    #lifeplan-table th {
+      background: rgba(99, 102, 241, 0.15);
+      color: var(--accent-light);
+      font-weight: 600;
+      position: sticky;
+      left: 0;
+      z-index: 2;
+    }
+
+    #lifeplan-table td:first-child {
+      background: var(--bg-secondary);
+      font-weight: 500;
+      text-align: left;
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      min-width: 120px;
+    }
+
+    #lifeplan-table .section-header {
+      background: rgba(99, 102, 241, 0.08) !important;
+      font-weight: 700;
+      color: var(--accent-light);
+    }
+
+    #lifeplan-table .total-row {
+      background: rgba(99, 102, 241, 0.05) !important;
+      font-weight: 700;
+    }
+
+    #lifeplan-table .balance-row {
+      font-weight: 700;
+      font-size: 0.78rem;
+    }
+
+    #lifeplan-table .negative {
+      color: var(--danger);
+    }
+
+    #lifeplan-table .positive {
+      color: var(--success);
+    }
+
+    #lifeplan-table .event-cell {
+      font-size: 0.65rem;
+      color: var(--warning);
+      text-align: center;
+      max-width: 80px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Chart */
+    .chart-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+
+    /* PDF */
+    .pdf-section {
+      padding: 20px;
+    }
+
+    .pdf-header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--accent);
+    }
+
+    #pdf-target {
+      background: white;
+      color: #1a1a1a;
+      padding: 24px;
+      display: none;
+    }
+
+    #pdf-target table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 9px;
+    }
+
+    #pdf-target th,
+    #pdf-target td {
+      padding: 4px 6px;
+      border: 1px solid #ccc;
+      text-align: right;
+    }
+
+    #pdf-target th {
+      background: #4f46e5;
+      color: white;
+    }
+
+    #pdf-target td:first-child {
+      text-align: left;
+      font-weight: 600;
+      background: #f3f4f6;
+    }
+
+    #pdf-target .negative {
+      color: #dc2626;
+    }
+
+    #pdf-target .positive {
+      color: #16a34a;
+    }
+
+    #pdf-target .section-header {
+      background: #e0e7ff !important;
+      font-weight: 700;
+      color: #4338ca;
+    }
+
+    #pdf-target .total-row {
+      background: #f0f0f0 !important;
+      font-weight: 700;
+    }
+
+    #pdf-target .event-cell {
+      font-size: 7px;
+      color: #d97706;
+      text-align: center;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .dashboard {
+        flex-direction: column;
+        height: auto;
+      }
+
+      .sidebar {
+        width: 100%;
+        min-width: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--border-glass);
+      }
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    .form-card {
+      animation: fadeIn 0.4s ease;
+    }
+  </style>
 </head>
+
 <body>
 
-<!-- Header -->
-<div class="header">
-  <div>
-    <h1>📊 ライフプランニングシステム</h1>
-    <div class="subtitle">Money Advice Center</div>
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <h1>📊 ライフプランニングシステム</h1>
+      <div class="subtitle">Money Advice Center</div>
+    </div>
+    <div id="header-actions">
+      <a href="simulation.html" class="btn btn-primary"
+        style="text-decoration:none;font-size:0.8rem;padding:8px 20px">📈 リスク・リターン シミュレーション</a>
+    </div>
   </div>
-  <div id="header-actions"></div>
-</div>
 
-<!-- Stepper -->
-<div class="stepper" id="stepper">
-  <div class="step-item active" data-step="1">
-    <div class="step-circle">1</div><span>基本情報</span>
-  </div><div class="step-line"></div>
-  <div class="step-item" data-step="2">
-    <div class="step-circle">2</div><span>収入</span>
-  </div><div class="step-line"></div>
-  <div class="step-item" data-step="3">
-    <div class="step-circle">3</div><span>支出</span>
-  </div><div class="step-line"></div>
-  <div class="step-item" data-step="4">
-    <div class="step-circle">4</div><span>資産・負債</span>
-  </div><div class="step-line"></div>
-  <div class="step-item" data-step="5">
-    <div class="step-circle">5</div><span>ライフイベント</span>
-  </div><div class="step-line"></div>
-  <div class="step-item" data-step="6">
-    <div class="step-circle">6</div><span>プラン表</span>
+  <!-- Stepper -->
+  <div class="stepper" id="stepper">
+    <div class="step-item active" data-step="1">
+      <div class="step-circle">1</div><span>基本情報</span>
+    </div>
+    <div class="step-line"></div>
+    <div class="step-item" data-step="2">
+      <div class="step-circle">2</div><span>収入</span>
+    </div>
+    <div class="step-line"></div>
+    <div class="step-item" data-step="3">
+      <div class="step-circle">3</div><span>支出</span>
+    </div>
+    <div class="step-line"></div>
+    <div class="step-item" data-step="4">
+      <div class="step-circle">4</div><span>資産・負債</span>
+    </div>
+    <div class="step-line"></div>
+    <div class="step-item" data-step="5">
+      <div class="step-circle">5</div><span>ライフイベント</span>
+    </div>
+    <div class="step-line"></div>
+    <div class="step-item" data-step="6">
+      <div class="step-circle">6</div><span>プラン表</span>
+    </div>
   </div>
-</div>
 
-<!-- Phase 1: Step 1 - Basic Info -->
-<div class="phase active" id="phase-1">
-<div class="form-container">
-  <div class="form-card">
-    <h2><span class="icon">👤</span>基本情報</h2>
-    <div class="form-grid">
-      <div class="form-group"><label>お名前</label><input type="text" id="client-name" placeholder="山田 太郎"></div>
-      <div class="form-group"><label>生年月日</label><input type="date" id="client-birth" value="1990-01-01"></div>
-      <div class="form-group"><label>性別</label>
-        <select id="client-gender"><option value="male">男性</option><option value="female">女性</option></select>
+  <!-- Phase 1: Step 1 - Basic Info -->
+  <div class="phase active" id="phase-1">
+    <div class="form-container">
+      <div class="form-card">
+        <h2><span class="icon">👤</span>基本情報</h2>
+        <div class="form-grid">
+          <div class="form-group"><label>お名前</label><input type="text" id="client-name" placeholder="山田 太郎"></div>
+          <div class="form-group"><label>生年月日</label><input type="date" id="client-birth" value="1990-01-01"></div>
+          <div class="form-group"><label>性別</label>
+            <select id="client-gender">
+              <option value="male">男性</option>
+              <option value="female">女性</option>
+            </select>
+          </div>
+          <div class="form-group"><label>配偶者の有無</label>
+            <select id="has-spouse" onchange="toggleSpouse()">
+              <option value="yes">あり</option>
+              <option value="no">なし</option>
+            </select>
+          </div>
+          <div class="form-group" id="spouse-name-group"><label>配偶者名</label><input type="text" id="spouse-name"
+              placeholder="山田 花子"></div>
+          <div class="form-group" id="spouse-birth-group"><label>配偶者 生年月日</label><input type="date" id="spouse-birth"
+              value="1992-01-01"></div>
+        </div>
       </div>
-      <div class="form-group"><label>配偶者の有無</label>
-        <select id="has-spouse" onchange="toggleSpouse()"><option value="yes">あり</option><option value="no">なし</option></select>
+      <div class="form-card">
+        <h2><span class="icon">👶</span>お子様情報</h2>
+        <div class="children-list" id="children-list"></div>
+        <button class="btn-add" onclick="addChild()" style="margin-top:12px">＋ お子様を追加</button>
       </div>
-      <div class="form-group" id="spouse-name-group"><label>配偶者名</label><input type="text" id="spouse-name" placeholder="山田 花子"></div>
-      <div class="form-group" id="spouse-birth-group"><label>配偶者 生年月日</label><input type="date" id="spouse-birth" value="1992-01-01"></div>
+      <div class="form-actions">
+        <div></div>
+        <button class="btn btn-primary" onclick="goStep(2)">次へ →</button>
+      </div>
     </div>
   </div>
-  <div class="form-card">
-    <h2><span class="icon">👶</span>お子様情報</h2>
-    <div class="children-list" id="children-list"></div>
-    <button class="btn-add" onclick="addChild()" style="margin-top:12px">＋ お子様を追加</button>
-  </div>
-  <div class="form-actions">
-    <div></div>
-    <button class="btn btn-primary" onclick="goStep(2)">次へ →</button>
-  </div>
-</div>
-</div>
 
-<!-- Phase 2: Income -->
-<div class="phase" id="phase-2">
-<div class="form-container">
-  <div class="form-card">
-    <h2><span class="icon">💰</span>収入情報</h2>
-    <div class="form-grid">
-      <div class="form-group"><label>本人 年収（万円）</label><input type="number" id="income-main" placeholder="500" value="500"></div>
-      <div class="form-group"><label>配偶者 年収（万円）</label><input type="number" id="income-spouse" placeholder="300" value="0"></div>
-      <div class="form-group"><label>その他年間収入（万円）</label><input type="number" id="income-other" placeholder="0" value="0"></div>
-      <div class="form-group"><label>退職金見込み（万円）</label><input type="number" id="retirement-bonus" placeholder="2000" value="1500"></div>
+  <!-- Phase 2: Income -->
+  <div class="phase" id="phase-2">
+    <div class="form-container">
+      <div class="form-card">
+        <h2><span class="icon">💰</span>収入情報</h2>
+        <div class="form-grid">
+          <div class="form-group"><label>本人 年収（万円）</label><input type="number" id="income-main" placeholder="500"
+              value="500"></div>
+          <div class="form-group"><label>配偶者 年収（万円）</label><input type="number" id="income-spouse" placeholder="300"
+              value="0"></div>
+          <div class="form-group"><label>その他年間収入（万円）</label><input type="number" id="income-other" placeholder="0"
+              value="0"></div>
+          <div class="form-group"><label>退職金見込み（万円）</label><input type="number" id="retirement-bonus" placeholder="2000"
+              value="1500"></div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="goStep(1)">← 戻る</button>
+        <button class="btn btn-primary" onclick="goStep(3)">次へ →</button>
+      </div>
     </div>
   </div>
-  <div class="form-actions">
-    <button class="btn btn-secondary" onclick="goStep(1)">← 戻る</button>
-    <button class="btn btn-primary" onclick="goStep(3)">次へ →</button>
-  </div>
-</div>
-</div>
 
-<!-- Phase 3: Expenses -->
-<div class="phase" id="phase-3">
-<div class="form-container">
-  <div class="form-card">
-    <h2><span class="icon">🏠</span>支出情報（年間・万円）</h2>
-    <div class="form-grid">
-      <div class="form-group"><label>基本生活費</label><input type="number" id="exp-living" placeholder="240" value="240"></div>
-      <div class="form-group"><label>住居費（家賃/ローン）</label><input type="number" id="exp-housing" placeholder="144" value="144"></div>
-      <div class="form-group"><label>保険料</label><input type="number" id="exp-insurance" placeholder="36" value="36"></div>
-      <div class="form-group"><label>車両費</label><input type="number" id="exp-car" placeholder="30" value="0"></div>
-      <div class="form-group"><label>教育費（現在）</label><input type="number" id="exp-education" placeholder="0" value="0"></div>
-      <div class="form-group"><label>その他支出</label><input type="number" id="exp-other" placeholder="60" value="60"></div>
+  <!-- Phase 3: Expenses -->
+  <div class="phase" id="phase-3">
+    <div class="form-container">
+      <div class="form-card">
+        <h2><span class="icon">🏠</span>支出情報（年間・万円）</h2>
+        <div class="form-grid">
+          <div class="form-group"><label>基本生活費</label><input type="number" id="exp-living" placeholder="240"
+              value="240"></div>
+          <div class="form-group"><label>住居費（家賃/ローン）</label><input type="number" id="exp-housing" placeholder="144"
+              value="144"></div>
+          <div class="form-group"><label>保険料</label><input type="number" id="exp-insurance" placeholder="36" value="36">
+          </div>
+          <div class="form-group"><label>車両費</label><input type="number" id="exp-car" placeholder="30" value="0"></div>
+          <div class="form-group"><label>教育費（現在）</label><input type="number" id="exp-education" placeholder="0"
+              value="0"></div>
+          <div class="form-group"><label>その他支出</label><input type="number" id="exp-other" placeholder="60" value="60">
+          </div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="goStep(2)">← 戻る</button>
+        <button class="btn btn-primary" onclick="goStep(4)">次へ →</button>
+      </div>
     </div>
   </div>
-  <div class="form-actions">
-    <button class="btn btn-secondary" onclick="goStep(2)">← 戻る</button>
-    <button class="btn btn-primary" onclick="goStep(4)">次へ →</button>
-  </div>
-</div>
-</div>
 
-<!-- Phase 4: Assets -->
-<div class="phase" id="phase-4">
-<div class="form-container">
-  <div class="form-card">
-    <h2><span class="icon">🏦</span>資産・負債情報（万円）</h2>
-    <div class="form-grid">
-      <div class="form-group"><label>預貯金</label><input type="number" id="asset-savings" placeholder="500" value="500"></div>
-      <div class="form-group"><label>投資資産（株・投信等）</label><input type="number" id="asset-investment" placeholder="200" value="200"></div>
-      <div class="form-group"><label>その他資産</label><input type="number" id="asset-other" placeholder="0" value="0"></div>
-      <div class="form-group"><label>住宅ローン残高</label><input type="number" id="debt-housing" placeholder="3000" value="0"></div>
-      <div class="form-group"><label>住宅ローン年間返済額</label><input type="number" id="debt-housing-annual" placeholder="120" value="0"></div>
-      <div class="form-group"><label>住宅ローン残年数</label><input type="number" id="debt-housing-years" placeholder="30" value="0"></div>
-      <div class="form-group"><label>その他負債残高</label><input type="number" id="debt-other" placeholder="0" value="0"></div>
+  <!-- Phase 4: Assets -->
+  <div class="phase" id="phase-4">
+    <div class="form-container">
+      <div class="form-card">
+        <h2><span class="icon">🏦</span>資産・負債情報（万円）</h2>
+        <div class="form-grid">
+          <div class="form-group"><label>預貯金</label><input type="number" id="asset-savings" placeholder="500"
+              value="500"></div>
+          <div class="form-group"><label>投資資産（株・投信等）</label><input type="number" id="asset-investment" placeholder="200"
+              value="200"></div>
+          <div class="form-group"><label>その他資産</label><input type="number" id="asset-other" placeholder="0" value="0">
+          </div>
+          <div class="form-group"><label>住宅ローン残高</label><input type="number" id="debt-housing" placeholder="3000"
+              value="0"></div>
+          <div class="form-group"><label>住宅ローン年間返済額</label><input type="number" id="debt-housing-annual"
+              placeholder="120" value="0"></div>
+          <div class="form-group"><label>住宅ローン残年数</label><input type="number" id="debt-housing-years" placeholder="30"
+              value="0"></div>
+          <div class="form-group"><label>その他負債残高</label><input type="number" id="debt-other" placeholder="0" value="0">
+          </div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="goStep(3)">← 戻る</button>
+        <button class="btn btn-primary" onclick="goStep(5)">次へ →</button>
+      </div>
     </div>
   </div>
-  <div class="form-actions">
-    <button class="btn btn-secondary" onclick="goStep(3)">← 戻る</button>
-    <button class="btn btn-primary" onclick="goStep(5)">次へ →</button>
-  </div>
-</div>
-</div>
 
-<!-- Phase 5: Life Events -->
-<div class="phase" id="phase-5">
-<div class="form-container">
-  <div class="form-card">
-    <h2><span class="icon">🎯</span>ライフイベント</h2>
-    <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:16px">将来予定しているイベントを追加してください。</p>
-    <div id="events-list"></div>
-    <button class="btn-add" onclick="addEvent()" style="margin-top:12px">＋ イベントを追加</button>
+  <!-- Phase 5: Life Events -->
+  <div class="phase" id="phase-5">
+    <div class="form-container">
+      <div class="form-card">
+        <h2><span class="icon">🎯</span>ライフイベント</h2>
+        <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:16px">将来予定しているイベントを追加してください。</p>
+        <div id="events-list"></div>
+        <button class="btn-add" onclick="addEvent()" style="margin-top:12px">＋ イベントを追加</button>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="goStep(4)">← 戻る</button>
+        <button class="btn btn-success" onclick="generatePlan()">✨ ライフプラン表を作成</button>
+      </div>
+    </div>
   </div>
-  <div class="form-actions">
-    <button class="btn btn-secondary" onclick="goStep(4)">← 戻る</button>
-    <button class="btn btn-success" onclick="generatePlan()">✨ ライフプラン表を作成</button>
-  </div>
-</div>
-</div>
 
-<!-- Phase 6: Dashboard -->
-<div class="phase" id="phase-6">
-<div class="dashboard">
-  <!-- Sidebar -->
-  <div class="sidebar">
-    <h3>⚙️ シミュレーション設定</h3>
-    <div class="param-group">
-      <div class="param-label"><span>年収上昇率</span><span class="param-value" id="pv-salary">1.0%</span></div>
-      <input type="range" id="p-salary" min="0" max="5" step="0.1" value="1" oninput="updateParam()">
+  <!-- Phase 6: Dashboard -->
+  <div class="phase" id="phase-6">
+    <div class="dashboard">
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <h3>⚙️ シミュレーション設定</h3>
+        <div class="param-group">
+          <div class="param-label"><span>年収上昇率</span><span class="param-value" id="pv-salary">1.0%</span></div>
+          <input type="range" id="p-salary" min="0" max="5" step="0.1" value="1" oninput="updateParam()">
+        </div>
+        <div class="param-group">
+          <div class="param-label"><span>物価上昇率</span><span class="param-value" id="pv-inflation">1.0%</span></div>
+          <input type="range" id="p-inflation" min="0" max="5" step="0.1" value="1" oninput="updateParam()">
+        </div>
+        <div class="param-group">
+          <div class="param-label"><span>運用利回り</span><span class="param-value" id="pv-return">3.0%</span></div>
+          <input type="range" id="p-return" min="0" max="10" step="0.1" value="3" oninput="updateParam()">
+        </div>
+        <div class="param-group">
+          <div class="param-label"><span>退職年齢</span><span class="param-value" id="pv-retire">65歳</span></div>
+          <input type="range" id="p-retire" min="50" max="75" step="1" value="65" oninput="updateParam()">
+        </div>
+        <div class="param-group">
+          <div class="param-label"><span>年金月額</span><span class="param-value" id="pv-pension">15万円</span></div>
+          <input type="range" id="p-pension" min="0" max="30" step="0.5" value="15" oninput="updateParam()">
+        </div>
+        <div class="param-group">
+          <div class="param-label"><span>住居費増減</span><span class="param-value" id="pv-housing">±0%</span></div>
+          <input type="range" id="p-housing" min="-50" max="50" step="1" value="0" oninput="updateParam()">
+        </div>
+        <div class="param-group">
+          <div class="param-label"><span>教育プラン</span><span class="param-value" id="pv-edu">公立中心</span></div>
+          <select id="p-edu" onchange="updateParam()"
+            style="width:100%;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:8px;padding:8px;color:var(--text-primary);font-family:inherit;font-size:0.8rem">
+            <option value="public">公立中心</option>
+            <option value="private">私立中心</option>
+          </select>
+        </div>
+        <button class="btn btn-success" onclick="exportPDF()" style="width:100%;margin-top:16px">📄 PDF出力</button>
+        <button class="btn btn-secondary" onclick="goStep(1)" style="width:100%;margin-top:8px">← ヒアリングに戻る</button>
+      </div>
+      <!-- Main -->
+      <div class="main-content">
+        <div class="chart-container">
+          <canvas id="asset-chart" height="200"></canvas>
+        </div>
+        <div class="table-wrapper">
+          <table id="lifeplan-table"></table>
+        </div>
+      </div>
     </div>
-    <div class="param-group">
-      <div class="param-label"><span>物価上昇率</span><span class="param-value" id="pv-inflation">1.0%</span></div>
-      <input type="range" id="p-inflation" min="0" max="5" step="0.1" value="1" oninput="updateParam()">
-    </div>
-    <div class="param-group">
-      <div class="param-label"><span>運用利回り</span><span class="param-value" id="pv-return">3.0%</span></div>
-      <input type="range" id="p-return" min="0" max="10" step="0.1" value="3" oninput="updateParam()">
-    </div>
-    <div class="param-group">
-      <div class="param-label"><span>退職年齢</span><span class="param-value" id="pv-retire">65歳</span></div>
-      <input type="range" id="p-retire" min="50" max="75" step="1" value="65" oninput="updateParam()">
-    </div>
-    <div class="param-group">
-      <div class="param-label"><span>年金月額</span><span class="param-value" id="pv-pension">15万円</span></div>
-      <input type="range" id="p-pension" min="0" max="30" step="0.5" value="15" oninput="updateParam()">
-    </div>
-    <div class="param-group">
-      <div class="param-label"><span>住居費増減</span><span class="param-value" id="pv-housing">±0%</span></div>
-      <input type="range" id="p-housing" min="-50" max="50" step="1" value="0" oninput="updateParam()">
-    </div>
-    <div class="param-group">
-      <div class="param-label"><span>教育プラン</span><span class="param-value" id="pv-edu">公立中心</span></div>
-      <select id="p-edu" onchange="updateParam()" style="width:100%;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:8px;padding:8px;color:var(--text-primary);font-family:inherit;font-size:0.8rem">
-        <option value="public">公立中心</option>
-        <option value="private">私立中心</option>
-      </select>
-    </div>
-    <button class="btn btn-success" onclick="exportPDF()" style="width:100%;margin-top:16px">📄 PDF出力</button>
-    <button class="btn btn-secondary" onclick="goStep(1)" style="width:100%;margin-top:8px">← ヒアリングに戻る</button>
   </div>
-  <!-- Main -->
-  <div class="main-content">
-    <div class="chart-container">
-      <canvas id="asset-chart" height="200"></canvas>
+
+  <!-- Hidden PDF target -->
+  <div id="pdf-target">
+    <div class="pdf-header">
+      <h2 style="color:#4f46e5;margin-bottom:4px">ライフプランニング表</h2>
+      <p id="pdf-client-info" style="font-size:11px;color:#666"></p>
+      <p id="pdf-date" style="font-size:10px;color:#999"></p>
     </div>
-    <div class="table-wrapper">
-      <table id="lifeplan-table"></table>
+    <table id="pdf-table"></table>
+    <div style="margin-top:16px">
+      <canvas id="pdf-chart" width="1100" height="300"></canvas>
+    </div>
+    <div style="margin-top:12px;font-size:8px;color:#999;text-align:center">
+      ※ 本資料はシミュレーションであり、将来の運用成果を保証するものではありません。<br>
+      作成：Money Advice Center
     </div>
   </div>
-</div>
-</div>
 
-<!-- Hidden PDF target -->
-<div id="pdf-target">
-  <div class="pdf-header">
-    <h2 style="color:#4f46e5;margin-bottom:4px">ライフプランニング表</h2>
-    <p id="pdf-client-info" style="font-size:11px;color:#666"></p>
-    <p id="pdf-date" style="font-size:10px;color:#999"></p>
-  </div>
-  <table id="pdf-table"></table>
-  <div style="margin-top:16px">
-    <canvas id="pdf-chart" width="1100" height="300"></canvas>
-  </div>
-  <div style="margin-top:12px;font-size:8px;color:#999;text-align:center">
-    ※ 本資料はシミュレーションであり、将来の運用成果を保証するものではありません。<br>
-    作成：Money Advice Center
-  </div>
-</div>
+  <script>
+    // ========== STATE ==========
+    let clientData = {};
+    let planData = [];
+    let chartInstance = null;
+    let childCounter = 0;
+    let eventCounter = 0;
 
-<script>
-// ========== STATE ==========
-let clientData = {};
-let planData = [];
-let chartInstance = null;
-let childCounter = 0;
-let eventCounter = 0;
+    // ========== NAVIGATION ==========
+    function goStep(step) {
+      // Save current form data
+      saveFormData();
+      // Update phases
+      document.querySelectorAll('.phase').forEach(p => p.classList.remove('active'));
+      document.getElementById('phase-' + step).classList.add('active');
+      // Update stepper
+      const items = document.querySelectorAll('.step-item');
+      const lines = document.querySelectorAll('.step-line');
+      items.forEach((item, i) => {
+        const s = i + 1;
+        item.classList.remove('active', 'completed');
+        if (s === step) item.classList.add('active');
+        else if (s < step) item.classList.add('completed');
+      });
+      lines.forEach((line, i) => {
+        line.classList.remove('completed');
+        if (i + 1 < step) line.classList.add('completed');
+      });
+      // Hide stepper on dashboard
+      document.getElementById('stepper').style.display = step === 6 ? 'none' : 'flex';
+      window.scrollTo(0, 0);
+    }
 
-// ========== NAVIGATION ==========
-function goStep(step) {
-  // Save current form data
-  saveFormData();
-  // Update phases
-  document.querySelectorAll('.phase').forEach(p => p.classList.remove('active'));
-  document.getElementById('phase-' + step).classList.add('active');
-  // Update stepper
-  const items = document.querySelectorAll('.step-item');
-  const lines = document.querySelectorAll('.step-line');
-  items.forEach((item, i) => {
-    const s = i + 1;
-    item.classList.remove('active', 'completed');
-    if (s === step) item.classList.add('active');
-    else if (s < step) item.classList.add('completed');
-  });
-  lines.forEach((line, i) => {
-    line.classList.remove('completed');
-    if (i + 1 < step) line.classList.add('completed');
-  });
-  // Hide stepper on dashboard
-  document.getElementById('stepper').style.display = step === 6 ? 'none' : 'flex';
-  window.scrollTo(0, 0);
-}
+    function toggleSpouse() {
+      const has = document.getElementById('has-spouse').value === 'yes';
+      document.getElementById('spouse-name-group').style.display = has ? '' : 'none';
+      document.getElementById('spouse-birth-group').style.display = has ? '' : 'none';
+    }
 
-function toggleSpouse() {
-  const has = document.getElementById('has-spouse').value === 'yes';
-  document.getElementById('spouse-name-group').style.display = has ? '' : 'none';
-  document.getElementById('spouse-birth-group').style.display = has ? '' : 'none';
-}
-
-// ========== CHILDREN ==========
-function addChild() {
-  childCounter++;
-  const div = document.createElement('div');
-  div.className = 'child-row';
-  div.id = 'child-' + childCounter;
-  div.innerHTML = `
+    // ========== CHILDREN ==========
+    function addChild() {
+      childCounter++;
+      const div = document.createElement('div');
+      div.className = 'child-row';
+      div.id = 'child-' + childCounter;
+      div.innerHTML = `
     <input type="text" placeholder="お名前" class="child-name" style="background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:8px;padding:10px;color:var(--text-primary);font-family:inherit">
     <input type="date" class="child-birth" value="2020-01-01" style="background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:8px;padding:10px;color:var(--text-primary);font-family:inherit">
     <button class="btn-remove" onclick="this.parentElement.remove()">×</button>
   `;
-  document.getElementById('children-list').appendChild(div);
-}
+      document.getElementById('children-list').appendChild(div);
+    }
 
-// ========== EVENTS ==========
-function addEvent() {
-  eventCounter++;
-  const div = document.createElement('div');
-  div.className = 'event-row';
-  div.id = 'event-' + eventCounter;
-  div.innerHTML = `
+    // ========== EVENTS ==========
+    function addEvent() {
+      eventCounter++;
+      const div = document.createElement('div');
+      div.className = 'event-row';
+      div.id = 'event-' + eventCounter;
+      div.innerHTML = `
     <select class="event-type" style="background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:8px;padding:10px;color:var(--text-primary);font-family:inherit">
       <option value="住宅購入">住宅購入</option>
       <option value="車購入">車購入</option>
@@ -683,394 +953,395 @@ function addEvent() {
     <input type="number" placeholder="金額(万円)" class="event-cost" value="500" style="width:120px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:8px;padding:10px;color:var(--text-primary);font-family:inherit">
     <button class="btn-remove" onclick="this.parentElement.remove()">×</button>
   `;
-  document.getElementById('events-list').appendChild(div);
-}
+      document.getElementById('events-list').appendChild(div);
+    }
 
-// ========== SAVE FORM DATA ==========
-function saveFormData() {
-  const getVal = id => document.getElementById(id)?.value || '';
-  const getNum = id => parseFloat(document.getElementById(id)?.value) || 0;
-  const currentYear = new Date().getFullYear();
+    // ========== SAVE FORM DATA ==========
+    function saveFormData() {
+      const getVal = id => document.getElementById(id)?.value || '';
+      const getNum = id => parseFloat(document.getElementById(id)?.value) || 0;
+      const currentYear = new Date().getFullYear();
 
-  const birthYear = getVal('client-birth') ? new Date(getVal('client-birth')).getFullYear() : 1990;
-  const clientAge = currentYear - birthYear;
+      const birthYear = getVal('client-birth') ? new Date(getVal('client-birth')).getFullYear() : 1990;
+      const clientAge = currentYear - birthYear;
 
-  clientData = {
-    name: getVal('client-name') || '（お名前未入力）',
-    birth: getVal('client-birth'),
-    birthYear: birthYear,
-    age: clientAge,
-    gender: getVal('client-gender'),
-    hasSpouse: getVal('has-spouse') === 'yes',
-    spouseName: getVal('spouse-name'),
-    spouseBirth: getVal('spouse-birth'),
-    spouseBirthYear: getVal('spouse-birth') ? new Date(getVal('spouse-birth')).getFullYear() : null,
-    children: [],
-    incomeMain: getNum('income-main'),
-    incomeSpouse: getNum('income-spouse'),
-    incomeOther: getNum('income-other'),
-    retirementBonus: getNum('retirement-bonus'),
-    expLiving: getNum('exp-living'),
-    expHousing: getNum('exp-housing'),
-    expInsurance: getNum('exp-insurance'),
-    expCar: getNum('exp-car'),
-    expEducation: getNum('exp-education'),
-    expOther: getNum('exp-other'),
-    assetSavings: getNum('asset-savings'),
-    assetInvestment: getNum('asset-investment'),
-    assetOther: getNum('asset-other'),
-    debtHousing: getNum('debt-housing'),
-    debtHousingAnnual: getNum('debt-housing-annual'),
-    debtHousingYears: getNum('debt-housing-years'),
-    debtOther: getNum('debt-other'),
-    events: []
-  };
+      clientData = {
+        name: getVal('client-name') || '（お名前未入力）',
+        birth: getVal('client-birth'),
+        birthYear: birthYear,
+        age: clientAge,
+        gender: getVal('client-gender'),
+        hasSpouse: getVal('has-spouse') === 'yes',
+        spouseName: getVal('spouse-name'),
+        spouseBirth: getVal('spouse-birth'),
+        spouseBirthYear: getVal('spouse-birth') ? new Date(getVal('spouse-birth')).getFullYear() : null,
+        children: [],
+        incomeMain: getNum('income-main'),
+        incomeSpouse: getNum('income-spouse'),
+        incomeOther: getNum('income-other'),
+        retirementBonus: getNum('retirement-bonus'),
+        expLiving: getNum('exp-living'),
+        expHousing: getNum('exp-housing'),
+        expInsurance: getNum('exp-insurance'),
+        expCar: getNum('exp-car'),
+        expEducation: getNum('exp-education'),
+        expOther: getNum('exp-other'),
+        assetSavings: getNum('asset-savings'),
+        assetInvestment: getNum('asset-investment'),
+        assetOther: getNum('asset-other'),
+        debtHousing: getNum('debt-housing'),
+        debtHousingAnnual: getNum('debt-housing-annual'),
+        debtHousingYears: getNum('debt-housing-years'),
+        debtOther: getNum('debt-other'),
+        events: []
+      };
 
-  // Children
-  document.querySelectorAll('.child-row').forEach(row => {
-    const name = row.querySelector('.child-name')?.value || '';
-    const birth = row.querySelector('.child-birth')?.value;
-    if (birth) {
-      clientData.children.push({
-        name: name || 'お子様',
-        birthYear: new Date(birth).getFullYear(),
-        age: currentYear - new Date(birth).getFullYear()
+      // Children
+      document.querySelectorAll('.child-row').forEach(row => {
+        const name = row.querySelector('.child-name')?.value || '';
+        const birth = row.querySelector('.child-birth')?.value;
+        if (birth) {
+          clientData.children.push({
+            name: name || 'お子様',
+            birthYear: new Date(birth).getFullYear(),
+            age: currentYear - new Date(birth).getFullYear()
+          });
+        }
+      });
+
+      // Events
+      document.querySelectorAll('.event-row').forEach(row => {
+        const type = row.querySelector('.event-type')?.value || '';
+        const age = parseInt(row.querySelector('.event-age')?.value) || 0;
+        const cost = parseFloat(row.querySelector('.event-cost')?.value) || 0;
+        if (age > 0) {
+          clientData.events.push({ type, age, cost });
+        }
       });
     }
-  });
 
-  // Events
-  document.querySelectorAll('.event-row').forEach(row => {
-    const type = row.querySelector('.event-type')?.value || '';
-    const age = parseInt(row.querySelector('.event-age')?.value) || 0;
-    const cost = parseFloat(row.querySelector('.event-cost')?.value) || 0;
-    if (age > 0) {
-      clientData.events.push({ type, age, cost });
+    // ========== EDUCATION COST TABLE ==========
+    function getEducationCost(childAge, plan) {
+      // Annual education cost by age (万円) 
+      // public vs private
+      const costs = {
+        public: { 7: 30, 13: 45, 16: 50, 19: 80 },  // 小/中/高/大
+        private: { 7: 100, 13: 120, 16: 100, 19: 150 }
+      };
+      const c = costs[plan] || costs.public;
+      if (childAge >= 19 && childAge <= 22) return c[19];
+      if (childAge >= 16 && childAge <= 18) return c[16];
+      if (childAge >= 13 && childAge <= 15) return c[13];
+      if (childAge >= 7 && childAge <= 12) return c[7];
+      if (childAge >= 3 && childAge <= 6) return 25; // 幼稚園
+      return 0;
     }
-  });
-}
 
-// ========== EDUCATION COST TABLE ==========
-function getEducationCost(childAge, plan) {
-  // Annual education cost by age (万円) 
-  // public vs private
-  const costs = {
-    public:  { 7:30, 13:45, 16:50, 19:80 },  // 小/中/高/大
-    private: { 7:100, 13:120, 16:100, 19:150 }
-  };
-  const c = costs[plan] || costs.public;
-  if (childAge >= 19 && childAge <= 22) return c[19];
-  if (childAge >= 16 && childAge <= 18) return c[16];
-  if (childAge >= 13 && childAge <= 15) return c[13];
-  if (childAge >= 7 && childAge <= 12) return c[7];
-  if (childAge >= 3 && childAge <= 6) return 25; // 幼稚園
-  return 0;
-}
+    // ========== CALCULATE PLAN ==========
+    function calculatePlan() {
+      const p = {
+        salaryGrowth: parseFloat(document.getElementById('p-salary').value) / 100,
+        inflation: parseFloat(document.getElementById('p-inflation').value) / 100,
+        investReturn: parseFloat(document.getElementById('p-return').value) / 100,
+        retireAge: parseInt(document.getElementById('p-retire').value),
+        pensionMonthly: parseFloat(document.getElementById('p-pension').value),
+        housingAdj: parseInt(document.getElementById('p-housing').value) / 100,
+        eduPlan: document.getElementById('p-edu').value
+      };
 
-// ========== CALCULATE PLAN ==========
-function calculatePlan() {
-  const p = {
-    salaryGrowth: parseFloat(document.getElementById('p-salary').value) / 100,
-    inflation: parseFloat(document.getElementById('p-inflation').value) / 100,
-    investReturn: parseFloat(document.getElementById('p-return').value) / 100,
-    retireAge: parseInt(document.getElementById('p-retire').value),
-    pensionMonthly: parseFloat(document.getElementById('p-pension').value),
-    housingAdj: parseInt(document.getElementById('p-housing').value) / 100,
-    eduPlan: document.getElementById('p-edu').value
-  };
+      const currentYear = new Date().getFullYear();
+      const simYears = 50; // simulate 50 years
+      const startAge = clientData.age;
+      planData = [];
 
-  const currentYear = new Date().getFullYear();
-  const simYears = 50; // simulate 50 years
-  const startAge = clientData.age;
-  planData = [];
+      let balance = clientData.assetSavings + clientData.assetInvestment + clientData.assetOther - clientData.debtOther;
+      let mainIncome = clientData.incomeMain;
+      let spouseIncome = clientData.incomeSpouse;
 
-  let balance = clientData.assetSavings + clientData.assetInvestment + clientData.assetOther - clientData.debtOther;
-  let mainIncome = clientData.incomeMain;
-  let spouseIncome = clientData.incomeSpouse;
+      for (let i = 0; i < simYears; i++) {
+        const year = currentYear + i;
+        const age = startAge + i;
+        const spouseAge = clientData.spouseBirthYear ? year - clientData.spouseBirthYear : null;
 
-  for (let i = 0; i < simYears; i++) {
-    const year = currentYear + i;
-    const age = startAge + i;
-    const spouseAge = clientData.spouseBirthYear ? year - clientData.spouseBirthYear : null;
+        if (age > 100) break;
 
-    if (age > 100) break;
+        // Build events for this year
+        const yearEvents = clientData.events.filter(e => e.age === age);
+        const eventCost = yearEvents.reduce((sum, e) => sum + e.cost, 0);
+        const eventLabels = yearEvents.map(e => e.type).join(', ');
 
-    // Build events for this year
-    const yearEvents = clientData.events.filter(e => e.age === age);
-    const eventCost = yearEvents.reduce((sum, e) => sum + e.cost, 0);
-    const eventLabels = yearEvents.map(e => e.type).join(', ');
+        // Children ages
+        const childAges = clientData.children.map(c => ({ name: c.name, age: year - c.birthYear }));
 
-    // Children ages
-    const childAges = clientData.children.map(c => ({ name: c.name, age: year - c.birthYear }));
+        // Income
+        const isRetired = age >= p.retireAge;
+        const isRetireYear = age === p.retireAge;
+        let salary = isRetired ? 0 : mainIncome;
+        let spSalary = (spouseAge && spouseAge >= p.retireAge) ? 0 : (clientData.hasSpouse ? spouseIncome : 0);
+        let pension = isRetired ? p.pensionMonthly * 12 : 0;
+        let otherIncome = clientData.incomeOther;
+        let bonus = isRetireYear ? clientData.retirementBonus : 0;
+        let totalIncome = salary + spSalary + pension + otherIncome + bonus;
 
-    // Income
-    const isRetired = age >= p.retireAge;
-    const isRetireYear = age === p.retireAge;
-    let salary = isRetired ? 0 : mainIncome;
-    let spSalary = (spouseAge && spouseAge >= p.retireAge) ? 0 : (clientData.hasSpouse ? spouseIncome : 0);
-    let pension = isRetired ? p.pensionMonthly * 12 : 0;
-    let otherIncome = clientData.incomeOther;
-    let bonus = isRetireYear ? clientData.retirementBonus : 0;
-    let totalIncome = salary + spSalary + pension + otherIncome + bonus;
-
-    // Expenses
-    const inflationFactor = Math.pow(1 + p.inflation, i);
-    let living = clientData.expLiving * inflationFactor;
-    let housing = clientData.expHousing * (1 + p.housingAdj) * inflationFactor;
-    // Check if housing loan still active
-    if (clientData.debtHousingYears > 0 && i < clientData.debtHousingYears) {
-      housing = clientData.debtHousingAnnual > 0 ? clientData.debtHousingAnnual : housing;
-    } else if (clientData.debtHousingYears > 0 && i >= clientData.debtHousingYears) {
-      housing = 0; // Loan paid off
-    }
-    // After retirement, reduce living by 20%
-    if (isRetired) living *= 0.8;
-
-    let insurance = clientData.expInsurance * inflationFactor;
-    let car = clientData.expCar * inflationFactor;
-    let education = 0;
-    childAges.forEach(c => { education += getEducationCost(c.age, p.eduPlan); });
-    let otherExp = clientData.expOther * inflationFactor;
-    let totalExpense = living + housing + insurance + car + education + otherExp + eventCost;
-
-    // Balance
-    let netIncome = totalIncome - totalExpense;
-    let investGain = balance > 0 ? balance * p.investReturn : 0;
-    balance = balance + netIncome + investGain;
-
-    planData.push({
-      year, age, spouseAge,
-      childAges: childAges.map(c => ({ ...c })),
-      events: eventLabels,
-      salary: Math.round(salary),
-      spSalary: Math.round(spSalary),
-      pension: Math.round(pension),
-      otherIncome: Math.round(otherIncome),
-      bonus: Math.round(bonus),
-      totalIncome: Math.round(totalIncome),
-      living: Math.round(living),
-      housing: Math.round(housing),
-      insurance: Math.round(insurance),
-      car: Math.round(car),
-      education: Math.round(education),
-      otherExp: Math.round(otherExp),
-      eventCost: Math.round(eventCost),
-      totalExpense: Math.round(totalExpense),
-      netIncome: Math.round(netIncome),
-      investGain: Math.round(investGain),
-      balance: Math.round(balance)
-    });
-
-    // Grow incomes for next year
-    if (!isRetired) mainIncome *= (1 + p.salaryGrowth);
-    if (spouseAge && spouseAge < p.retireAge) spouseIncome *= (1 + p.salaryGrowth);
-  }
-}
-
-// ========== RENDER TABLE ==========
-function renderTable(tableId) {
-  const table = document.getElementById(tableId);
-  const isPdf = tableId === 'pdf-table';
-  if (!planData.length) return;
-
-  let html = '<thead><tr><th>項目</th>';
-  planData.forEach(d => { html += `<th>${d.year}<br>(${d.age}歳)</th>`; });
-  html += '</tr></thead><tbody>';
-
-  // Age rows
-  if (clientData.hasSpouse) {
-    html += '<tr><td>配偶者年齢</td>';
-    planData.forEach(d => { html += `<td>${d.spouseAge || '-'}</td>`; });
-    html += '</tr>';
-  }
-  clientData.children.forEach((child, ci) => {
-    html += `<tr><td>${child.name}年齢</td>`;
-    planData.forEach(d => {
-      const ca = d.childAges[ci];
-      html += `<td>${ca ? ca.age : '-'}</td>`;
-    });
-    html += '</tr>';
-  });
-
-  // Events
-  html += '<tr><td>ライフイベント</td>';
-  planData.forEach(d => { html += `<td class="event-cell">${d.events || ''}</td>`; });
-  html += '</tr>';
-
-  // Income section
-  html += `<tr class="section-header"><td>【収入】</td>${planData.map(() => '<td></td>').join('')}</tr>`;
-  html += buildRow('給与収入', planData.map(d => d.salary));
-  if (clientData.hasSpouse) html += buildRow('配偶者収入', planData.map(d => d.spSalary));
-  html += buildRow('年金', planData.map(d => d.pension));
-  html += buildRow('その他収入', planData.map(d => d.otherIncome));
-  html += buildRow('退職金', planData.map(d => d.bonus));
-  html += buildRow('収入合計', planData.map(d => d.totalIncome), true);
-
-  // Expense section
-  html += `<tr class="section-header"><td>【支出】</td>${planData.map(() => '<td></td>').join('')}</tr>`;
-  html += buildRow('基本生活費', planData.map(d => d.living));
-  html += buildRow('住居費', planData.map(d => d.housing));
-  html += buildRow('保険料', planData.map(d => d.insurance));
-  html += buildRow('車両費', planData.map(d => d.car));
-  html += buildRow('教育費', planData.map(d => d.education));
-  html += buildRow('その他支出', planData.map(d => d.otherExp));
-  html += buildRow('イベント支出', planData.map(d => d.eventCost));
-  html += buildRow('支出合計', planData.map(d => d.totalExpense), true);
-
-  // Summary
-  html += `<tr class="section-header"><td>【収支・資産】</td>${planData.map(() => '<td></td>').join('')}</tr>`;
-  html += buildRow('年間収支', planData.map(d => d.netIncome), false, true);
-  html += buildRow('運用益', planData.map(d => d.investGain));
-  html += buildRow('金融資産残高', planData.map(d => d.balance), false, true, true);
-
-  html += '</tbody>';
-  table.innerHTML = html;
-}
-
-function buildRow(label, values, isTotal, colorize, isBalance) {
-  let cls = isTotal ? ' class="total-row"' : (isBalance ? ' class="balance-row"' : '');
-  let html = `<tr${cls}><td>${label}</td>`;
-  values.forEach(v => {
-    let cellCls = '';
-    if (colorize || isBalance) {
-      cellCls = v < 0 ? ' class="negative"' : (isBalance && v > 0 ? ' class="positive"' : '');
-    }
-    html += `<td${cellCls}>${formatNum(v)}</td>`;
-  });
-  html += '</tr>';
-  return html;
-}
-
-function formatNum(n) {
-  if (n === 0) return '-';
-  return n.toLocaleString('ja-JP');
-}
-
-// ========== CHART ==========
-function renderChart(canvasId) {
-  const canvas = document.getElementById(canvasId);
-  const ctx = canvas.getContext('2d');
-  const isPdf = canvasId === 'pdf-chart';
-
-  const labels = planData.map(d => d.year);
-  const data = planData.map(d => d.balance);
-
-  const config = {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{
-        label: '金融資産残高（万円）',
-        data,
-        backgroundColor: data.map(v => v >= 0 
-          ? (isPdf ? 'rgba(79,70,229,0.7)' : 'rgba(99,102,241,0.6)')
-          : (isPdf ? 'rgba(220,38,38,0.7)' : 'rgba(239,68,68,0.6)')),
-        borderColor: data.map(v => v >= 0 
-          ? (isPdf ? '#4f46e5' : '#818cf8')
-          : (isPdf ? '#dc2626' : '#f87171')),
-        borderWidth: 1,
-        borderRadius: 2,
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: isPdf,
-      animation: isPdf ? false : { duration: 800 },
-      plugins: {
-        legend: { 
-          labels: { color: isPdf ? '#333' : '#9ca3af', font: { size: isPdf ? 10 : 12 } }
-        },
-        tooltip: {
-          callbacks: {
-            label: ctx => `${ctx.parsed.y.toLocaleString('ja-JP')}万円`
-          }
+        // Expenses
+        const inflationFactor = Math.pow(1 + p.inflation, i);
+        let living = clientData.expLiving * inflationFactor;
+        let housing = clientData.expHousing * (1 + p.housingAdj) * inflationFactor;
+        // Check if housing loan still active
+        if (clientData.debtHousingYears > 0 && i < clientData.debtHousingYears) {
+          housing = clientData.debtHousingAnnual > 0 ? clientData.debtHousingAnnual : housing;
+        } else if (clientData.debtHousingYears > 0 && i >= clientData.debtHousingYears) {
+          housing = 0; // Loan paid off
         }
-      },
-      scales: {
-        x: {
-          ticks: { color: isPdf ? '#666' : '#6b7280', font: { size: isPdf ? 8 : 10 }, maxRotation: 45 },
-          grid: { color: isPdf ? '#e5e7eb' : 'rgba(255,255,255,0.05)' }
-        },
-        y: {
-          ticks: { 
-            color: isPdf ? '#666' : '#6b7280',
-            callback: v => v.toLocaleString('ja-JP'),
-          },
-          grid: { color: isPdf ? '#e5e7eb' : 'rgba(255,255,255,0.05)' }
-        }
+        // After retirement, reduce living by 20%
+        if (isRetired) living *= 0.8;
+
+        let insurance = clientData.expInsurance * inflationFactor;
+        let car = clientData.expCar * inflationFactor;
+        let education = 0;
+        childAges.forEach(c => { education += getEducationCost(c.age, p.eduPlan); });
+        let otherExp = clientData.expOther * inflationFactor;
+        let totalExpense = living + housing + insurance + car + education + otherExp + eventCost;
+
+        // Balance
+        let netIncome = totalIncome - totalExpense;
+        let investGain = balance > 0 ? balance * p.investReturn : 0;
+        balance = balance + netIncome + investGain;
+
+        planData.push({
+          year, age, spouseAge,
+          childAges: childAges.map(c => ({ ...c })),
+          events: eventLabels,
+          salary: Math.round(salary),
+          spSalary: Math.round(spSalary),
+          pension: Math.round(pension),
+          otherIncome: Math.round(otherIncome),
+          bonus: Math.round(bonus),
+          totalIncome: Math.round(totalIncome),
+          living: Math.round(living),
+          housing: Math.round(housing),
+          insurance: Math.round(insurance),
+          car: Math.round(car),
+          education: Math.round(education),
+          otherExp: Math.round(otherExp),
+          eventCost: Math.round(eventCost),
+          totalExpense: Math.round(totalExpense),
+          netIncome: Math.round(netIncome),
+          investGain: Math.round(investGain),
+          balance: Math.round(balance)
+        });
+
+        // Grow incomes for next year
+        if (!isRetired) mainIncome *= (1 + p.salaryGrowth);
+        if (spouseAge && spouseAge < p.retireAge) spouseIncome *= (1 + p.salaryGrowth);
       }
     }
-  };
 
-  if (canvasId === 'asset-chart') {
-    if (chartInstance) chartInstance.destroy();
-    chartInstance = new Chart(ctx, config);
-  } else {
-    new Chart(ctx, config);
-  }
-}
+    // ========== RENDER TABLE ==========
+    function renderTable(tableId) {
+      const table = document.getElementById(tableId);
+      const isPdf = tableId === 'pdf-table';
+      if (!planData.length) return;
 
-// ========== GENERATE PLAN ==========
-function generatePlan() {
-  saveFormData();
-  goStep(6);
-  calculatePlan();
-  renderTable('lifeplan-table');
-  renderChart('asset-chart');
-}
+      let html = '<thead><tr><th>項目</th>';
+      planData.forEach(d => { html += `<th>${d.year}<br>(${d.age}歳)</th>`; });
+      html += '</tr></thead><tbody>';
 
-// ========== UPDATE PARAMS ==========
-function updateParam() {
-  document.getElementById('pv-salary').textContent = document.getElementById('p-salary').value + '%';
-  document.getElementById('pv-inflation').textContent = document.getElementById('p-inflation').value + '%';
-  document.getElementById('pv-return').textContent = document.getElementById('p-return').value + '%';
-  document.getElementById('pv-retire').textContent = document.getElementById('p-retire').value + '歳';
-  document.getElementById('pv-pension').textContent = document.getElementById('p-pension').value + '万円';
-  const h = document.getElementById('p-housing').value;
-  document.getElementById('pv-housing').textContent = (h >= 0 ? '+' : '') + h + '%';
-  document.getElementById('pv-edu').textContent = document.getElementById('p-edu').value === 'public' ? '公立中心' : '私立中心';
+      // Age rows
+      if (clientData.hasSpouse) {
+        html += '<tr><td>配偶者年齢</td>';
+        planData.forEach(d => { html += `<td>${d.spouseAge || '-'}</td>`; });
+        html += '</tr>';
+      }
+      clientData.children.forEach((child, ci) => {
+        html += `<tr><td>${child.name}年齢</td>`;
+        planData.forEach(d => {
+          const ca = d.childAges[ci];
+          html += `<td>${ca ? ca.age : '-'}</td>`;
+        });
+        html += '</tr>';
+      });
 
-  calculatePlan();
-  renderTable('lifeplan-table');
-  renderChart('asset-chart');
-}
+      // Events
+      html += '<tr><td>ライフイベント</td>';
+      planData.forEach(d => { html += `<td class="event-cell">${d.events || ''}</td>`; });
+      html += '</tr>';
 
-// ========== PDF EXPORT ==========
-function exportPDF() {
-  const target = document.getElementById('pdf-target');
-  target.style.display = 'block';
+      // Income section
+      html += `<tr class="section-header"><td>【収入】</td>${planData.map(() => '<td></td>').join('')}</tr>`;
+      html += buildRow('給与収入', planData.map(d => d.salary));
+      if (clientData.hasSpouse) html += buildRow('配偶者収入', planData.map(d => d.spSalary));
+      html += buildRow('年金', planData.map(d => d.pension));
+      html += buildRow('その他収入', planData.map(d => d.otherIncome));
+      html += buildRow('退職金', planData.map(d => d.bonus));
+      html += buildRow('収入合計', planData.map(d => d.totalIncome), true);
 
-  // Client info
-  document.getElementById('pdf-client-info').textContent =
-    `${clientData.name} 様（${clientData.age}歳）` +
-    (clientData.hasSpouse ? ` / 配偶者：${clientData.spouseName}` : '');
-  const now = new Date();
-  document.getElementById('pdf-date').textContent =
-    `作成日：${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
+      // Expense section
+      html += `<tr class="section-header"><td>【支出】</td>${planData.map(() => '<td></td>').join('')}</tr>`;
+      html += buildRow('基本生活費', planData.map(d => d.living));
+      html += buildRow('住居費', planData.map(d => d.housing));
+      html += buildRow('保険料', planData.map(d => d.insurance));
+      html += buildRow('車両費', planData.map(d => d.car));
+      html += buildRow('教育費', planData.map(d => d.education));
+      html += buildRow('その他支出', planData.map(d => d.otherExp));
+      html += buildRow('イベント支出', planData.map(d => d.eventCost));
+      html += buildRow('支出合計', planData.map(d => d.totalExpense), true);
 
-  renderTable('pdf-table');
-  renderChart('pdf-chart');
+      // Summary
+      html += `<tr class="section-header"><td>【収支・資産】</td>${planData.map(() => '<td></td>').join('')}</tr>`;
+      html += buildRow('年間収支', planData.map(d => d.netIncome), false, true);
+      html += buildRow('運用益', planData.map(d => d.investGain));
+      html += buildRow('金融資産残高', planData.map(d => d.balance), false, true, true);
 
-  setTimeout(() => {
-    const opt = {
-      margin: 5,
-      filename: `ライフプラン_${clientData.name}.pdf`,
-      image: { type: 'jpeg', quality: 0.95 },
-      html2canvas: { scale: 2, useCORS: true, scrollX: 0, scrollY: 0 },
-      jsPDF: { unit: 'mm', format: 'a3', orientation: 'landscape' }
-    };
-    html2pdf().set(opt).from(target).save().then(() => {
-      target.style.display = 'none';
+      html += '</tbody>';
+      table.innerHTML = html;
+    }
+
+    function buildRow(label, values, isTotal, colorize, isBalance) {
+      let cls = isTotal ? ' class="total-row"' : (isBalance ? ' class="balance-row"' : '');
+      let html = `<tr${cls}><td>${label}</td>`;
+      values.forEach(v => {
+        let cellCls = '';
+        if (colorize || isBalance) {
+          cellCls = v < 0 ? ' class="negative"' : (isBalance && v > 0 ? ' class="positive"' : '');
+        }
+        html += `<td${cellCls}>${formatNum(v)}</td>`;
+      });
+      html += '</tr>';
+      return html;
+    }
+
+    function formatNum(n) {
+      if (n === 0) return '-';
+      return n.toLocaleString('ja-JP');
+    }
+
+    // ========== CHART ==========
+    function renderChart(canvasId) {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext('2d');
+      const isPdf = canvasId === 'pdf-chart';
+
+      const labels = planData.map(d => d.year);
+      const data = planData.map(d => d.balance);
+
+      const config = {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: '金融資産残高（万円）',
+            data,
+            backgroundColor: data.map(v => v >= 0
+              ? (isPdf ? 'rgba(79,70,229,0.7)' : 'rgba(99,102,241,0.6)')
+              : (isPdf ? 'rgba(220,38,38,0.7)' : 'rgba(239,68,68,0.6)')),
+            borderColor: data.map(v => v >= 0
+              ? (isPdf ? '#4f46e5' : '#818cf8')
+              : (isPdf ? '#dc2626' : '#f87171')),
+            borderWidth: 1,
+            borderRadius: 2,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: isPdf,
+          animation: isPdf ? false : { duration: 800 },
+          plugins: {
+            legend: {
+              labels: { color: isPdf ? '#333' : '#9ca3af', font: { size: isPdf ? 10 : 12 } }
+            },
+            tooltip: {
+              callbacks: {
+                label: ctx => `${ctx.parsed.y.toLocaleString('ja-JP')}万円`
+              }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: isPdf ? '#666' : '#6b7280', font: { size: isPdf ? 8 : 10 }, maxRotation: 45 },
+              grid: { color: isPdf ? '#e5e7eb' : 'rgba(255,255,255,0.05)' }
+            },
+            y: {
+              ticks: {
+                color: isPdf ? '#666' : '#6b7280',
+                callback: v => v.toLocaleString('ja-JP'),
+              },
+              grid: { color: isPdf ? '#e5e7eb' : 'rgba(255,255,255,0.05)' }
+            }
+          }
+        }
+      };
+
+      if (canvasId === 'asset-chart') {
+        if (chartInstance) chartInstance.destroy();
+        chartInstance = new Chart(ctx, config);
+      } else {
+        new Chart(ctx, config);
+      }
+    }
+
+    // ========== GENERATE PLAN ==========
+    function generatePlan() {
+      saveFormData();
+      goStep(6);
+      calculatePlan();
+      renderTable('lifeplan-table');
+      renderChart('asset-chart');
+    }
+
+    // ========== UPDATE PARAMS ==========
+    function updateParam() {
+      document.getElementById('pv-salary').textContent = document.getElementById('p-salary').value + '%';
+      document.getElementById('pv-inflation').textContent = document.getElementById('p-inflation').value + '%';
+      document.getElementById('pv-return').textContent = document.getElementById('p-return').value + '%';
+      document.getElementById('pv-retire').textContent = document.getElementById('p-retire').value + '歳';
+      document.getElementById('pv-pension').textContent = document.getElementById('p-pension').value + '万円';
+      const h = document.getElementById('p-housing').value;
+      document.getElementById('pv-housing').textContent = (h >= 0 ? '+' : '') + h + '%';
+      document.getElementById('pv-edu').textContent = document.getElementById('p-edu').value === 'public' ? '公立中心' : '私立中心';
+
+      calculatePlan();
+      renderTable('lifeplan-table');
+      renderChart('asset-chart');
+    }
+
+    // ========== PDF EXPORT ==========
+    function exportPDF() {
+      const target = document.getElementById('pdf-target');
+      target.style.display = 'block';
+
+      // Client info
+      document.getElementById('pdf-client-info').textContent =
+        `${clientData.name} 様（${clientData.age}歳）` +
+        (clientData.hasSpouse ? ` / 配偶者：${clientData.spouseName}` : '');
+      const now = new Date();
+      document.getElementById('pdf-date').textContent =
+        `作成日：${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
+
+      renderTable('pdf-table');
+      renderChart('pdf-chart');
+
+      setTimeout(() => {
+        const opt = {
+          margin: 5,
+          filename: `ライフプラン_${clientData.name}.pdf`,
+          image: { type: 'jpeg', quality: 0.95 },
+          html2canvas: { scale: 2, useCORS: true, scrollX: 0, scrollY: 0 },
+          jsPDF: { unit: 'mm', format: 'a3', orientation: 'landscape' }
+        };
+        html2pdf().set(opt).from(target).save().then(() => {
+          target.style.display = 'none';
+        });
+      }, 500);
+    }
+
+    // ========== INIT ==========
+    window.addEventListener('DOMContentLoaded', () => {
+      toggleSpouse();
+      addChild(); // Start with one child
+      addEvent(); // Start with one event
     });
-  }, 500);
-}
-
-// ========== INIT ==========
-window.addEventListener('DOMContentLoaded', () => {
-  toggleSpouse();
-  addChild(); // Start with one child
-  addEvent(); // Start with one event
-});
-</script>
+  </script>
 </body>
+
 </html>

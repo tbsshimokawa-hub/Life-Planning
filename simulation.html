@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>リスク・リターン シミュレーション | Money Advice Center</title>
+    <meta name="description" content="投資のリスクとリターンを可視化するシミュレーションツール">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0f1117;
+            --bg-secondary: #1a1d2e;
+            --bg-card: rgba(26, 29, 46, 0.8);
+            --bg-glass: rgba(255, 255, 255, 0.05);
+            --border-glass: rgba(255, 255, 255, 0.1);
+            --text-primary: #e8eaf0;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            --accent: #6366f1;
+            --accent-light: #818cf8;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --gradient-1: linear-gradient(135deg, #6366f1, #8b5cf6);
+            --gradient-2: linear-gradient(135deg, #0f1117 0%, #1a1d2e 100%);
+            --radius: 12px;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 20% 40%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 60%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 50% 20%, rgba(34, 197, 94, 0.05) 0%, transparent 50%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-glass);
+            padding: 16px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header h1 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            background: var(--gradient-1);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 0.02em;
+        }
+
+        .header .subtitle {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 28px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--gradient-1);
+            color: white;
+            box-shadow: 0 4px 16px var(--accent-glow);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px var(--accent-glow);
+        }
+
+        .btn-secondary {
+            background: var(--bg-glass);
+            border: 1px solid var(--border-glass);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-home {
+            background: rgba(34, 197, 94, 0.12);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: var(--success);
+            font-size: 0.8rem;
+            padding: 8px 20px;
+        }
+
+        .btn-home:hover {
+            background: rgba(34, 197, 94, 0.22);
+            transform: translateY(-1px);
+        }
+
+        /* Layout */
+        .sim-layout {
+            display: flex;
+            height: calc(100vh - 65px);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 340px;
+            min-width: 340px;
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-right: 1px solid var(--border-glass);
+            padding: 28px 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .sidebar h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--gradient-1);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .sidebar-desc {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        /* Parameter Groups */
+        .param-section {
+            background: var(--bg-glass);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius);
+            padding: 18px;
+            margin-bottom: 12px;
+            transition: border-color 0.3s;
+        }
+
+        .param-section:hover {
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
+        .param-section .section-icon {
+            font-size: 0.85rem;
+            margin-right: 6px;
+        }
+
+        .param-section h4 {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+        }
+
+        .param-group {
+            margin-bottom: 16px;
+        }
+
+        .param-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .param-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .param-value {
+            color: var(--accent-light);
+            font-weight: 700;
+            font-size: 0.9rem;
+            font-family: 'Inter', monospace;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            appearance: none;
+            -webkit-appearance: none;
+            background: linear-gradient(90deg, rgba(99, 102, 241, 0.3), rgba(139, 92, 246, 0.3));
+            border-radius: 3px;
+            outline: none;
+            transition: background 0.2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--gradient-1);
+            box-shadow: 0 0 12px var(--accent-glow);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--gradient-1);
+            box-shadow: 0 0 12px var(--accent-glow);
+            cursor: pointer;
+            border: none;
+        }
+
+        .number-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-glass);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+        }
+
+        .number-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .input-suffix {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* Chart Card */
+        .chart-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: var(--shadow);
+        }
+
+        .chart-card h2 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chart-subtitle {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            width: 100%;
+            height: 420px;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+        }
+
+        .stat-card {
+            background: var(--bg-glass);
+            border: 1px solid var(--border-glass);
+            border-radius: 10px;
+            padding: 16px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(99, 102, 241, 0.3);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .stat-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            font-family: 'Inter', monospace;
+        }
+
+        .stat-sub {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .stat-card.median {
+            border-color: rgba(99, 102, 241, 0.4);
+        }
+
+        .stat-card.median .stat-value {
+            color: var(--accent-light);
+        }
+
+        .stat-card.plus1 .stat-value {
+            color: #34d399;
+        }
+
+        .stat-card.minus1 .stat-value {
+            color: #fbbf24;
+        }
+
+        .stat-card.plus2 .stat-value {
+            color: #22c55e;
+        }
+
+        .stat-card.minus2 .stat-value {
+            color: #ef4444;
+        }
+
+        /* Disclaimer */
+        .disclaimer {
+            text-align: center;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            padding: 12px;
+            border-top: 1px solid var(--border-glass);
+            margin-top: auto;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sim-layout {
+                flex-direction: column;
+                height: auto;
+            }
+
+            .sidebar {
+                width: 100%;
+                min-width: auto;
+                border-right: none;
+                border-bottom: 1px solid var(--border-glass);
+            }
+
+            .chart-wrapper {
+                height: 300px;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .header {
+                padding: 12px 16px;
+            }
+
+            .main-content {
+                padding: 16px;
+            }
+
+            .sidebar {
+                padding: 20px 16px;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        .chart-card {
+            animation: fadeInUp 0.5s ease;
+        }
+
+        .stat-card {
+            animation: fadeInUp 0.5s ease backwards;
+        }
+
+        .stat-card:nth-child(1) {
+            animation-delay: 0.05s;
+        }
+
+        .stat-card:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .stat-card:nth-child(3) {
+            animation-delay: 0.15s;
+        }
+
+        .stat-card:nth-child(4) {
+            animation-delay: 0.2s;
+        }
+
+        .stat-card:nth-child(5) {
+            animation-delay: 0.25s;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Header -->
+    <div class="header">
+        <div>
+            <h1>📈 リスク・リターン シミュレーション</h1>
+            <div class="subtitle">Money Advice Center</div>
+        </div>
+        <div>
+            <a href="index.html" class="btn btn-home">🏠 ホームに戻る</a>
+        </div>
+    </div>
+
+    <!-- Layout -->
+    <div class="sim-layout">
+
+        <!-- Sidebar Parameters -->
+        <div class="sidebar">
+            <h3>⚙️ パラメーター設定</h3>
+            <p class="sidebar-desc">各パラメーターを調整して、投資の将来シナリオをリアルタイムで確認できます。</p>
+
+            <!-- Expected Return -->
+            <div class="param-section">
+                <h4><span class="section-icon">📊</span>期待リターン（年率）</h4>
+                <div class="param-group">
+                    <div class="param-label">
+                        <span>年率リターン</span>
+                        <span class="param-value" id="pv-return">5.0%</span>
+                    </div>
+                    <input type="range" id="p-return" min="0" max="20" step="0.1" value="5"
+                        oninput="updateSimulation()">
+                </div>
+            </div>
+
+            <!-- Risk -->
+            <div class="param-section">
+                <h4><span class="section-icon">⚡</span>リスク（標準偏差）</h4>
+                <div class="param-group">
+                    <div class="param-label">
+                        <span>年率標準偏差</span>
+                        <span class="param-value" id="pv-risk">15.0%</span>
+                    </div>
+                    <input type="range" id="p-risk" min="0" max="40" step="0.1" value="15" oninput="updateSimulation()">
+                </div>
+            </div>
+
+            <!-- Initial Investment -->
+            <div class="param-section">
+                <h4><span class="section-icon">💰</span>初期投資金額</h4>
+                <div class="param-group">
+                    <input type="number" class="number-input" id="p-initial" value="1000" min="1" step="100"
+                        oninput="updateSimulation()">
+                    <div class="input-suffix">単位：万円</div>
+                </div>
+            </div>
+
+            <!-- Period -->
+            <div class="param-section">
+                <h4><span class="section-icon">📅</span>シミュレーション期間</h4>
+                <div class="param-group">
+                    <div class="param-label">
+                        <span>投資期間</span>
+                        <span class="param-value" id="pv-period">30年</span>
+                    </div>
+                    <input type="range" id="p-period" min="1" max="50" step="1" value="30" oninput="updateSimulation()">
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+
+            <!-- Chart -->
+            <div class="chart-card">
+                <h2>📉 資産推移シミュレーション</h2>
+                <p class="chart-subtitle">対数正規分布モデルに基づく期待値と信頼区間（±1σ, ±2σ）</p>
+                <div class="chart-wrapper">
+                    <canvas id="sim-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-grid" id="stats-grid">
+                <!-- Populated by JS -->
+            </div>
+
+            <!-- Disclaimer -->
+            <div class="disclaimer">
+                ※ 本シミュレーションは対数正規分布モデルに基づく統計的な推計であり、将来の運用成果を保証するものではありません。<br>
+                実際の投資にはモデルでは表現できないリスクが伴います。投資判断はご自身の責任で行ってください。
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== STATE ==========
+        let chartInstance = null;
+
+        // ========== SIMULATION MODEL ==========
+        // Log-normal model:
+        // Median:  P0 * exp((mu - sigma^2/2) * t)
+        // +nσ:     P0 * exp((mu - sigma^2/2) * t + n * sigma * sqrt(t))
+        // -nσ:     P0 * exp((mu - sigma^2/2) * t - n * sigma * sqrt(t))
+        function calculateScenarios(P0, mu, sigma, years) {
+            const data = {
+                labels: [],
+                median: [],
+                plus1: [], minus1: [],
+                plus2: [], minus2: []
+            };
+
+            for (let t = 0; t <= years; t++) {
+                data.labels.push(`${t}年目`);
+                const drift = (mu - (sigma * sigma) / 2) * t;
+                const diffusion1 = sigma * Math.sqrt(t);
+                const diffusion2 = 2 * sigma * Math.sqrt(t);
+
+                data.median.push(P0 * Math.exp(drift));
+                data.plus1.push(P0 * Math.exp(drift + diffusion1));
+                data.minus1.push(P0 * Math.exp(drift - diffusion1));
+                data.plus2.push(P0 * Math.exp(drift + diffusion2));
+                data.minus2.push(P0 * Math.exp(drift - diffusion2));
+            }
+
+            return data;
+        }
+
+        // ========== CHART RENDERING ==========
+        function renderChart(data) {
+            const canvas = document.getElementById('sim-chart');
+            const ctx = canvas.getContext('2d');
+
+            if (chartInstance) chartInstance.destroy();
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        {
+                            label: '+2σ（上位約2.3%）',
+                            data: data.plus2,
+                            borderColor: 'rgba(34,197,94,0.5)',
+                            backgroundColor: 'rgba(34,197,94,0.03)',
+                            borderWidth: 1,
+                            borderDash: [6, 4],
+                            pointRadius: 0,
+                            fill: false,
+                            tension: 0.3,
+                            order: 5
+                        },
+                        {
+                            label: '+1σ（上位約15.9%）',
+                            data: data.plus1,
+                            borderColor: 'rgba(52,211,153,0.7)',
+                            backgroundColor: 'rgba(52,211,153,0.06)',
+                            borderWidth: 1.5,
+                            borderDash: [4, 3],
+                            pointRadius: 0,
+                            fill: '+1',
+                            tension: 0.3,
+                            order: 4
+                        },
+                        {
+                            label: '期待値（中央値）',
+                            data: data.median,
+                            borderColor: '#818cf8',
+                            backgroundColor: 'rgba(129,140,248,0.1)',
+                            borderWidth: 3,
+                            pointRadius: 0,
+                            pointHoverRadius: 6,
+                            pointHoverBackgroundColor: '#818cf8',
+                            fill: false,
+                            tension: 0.3,
+                            order: 1
+                        },
+                        {
+                            label: '−1σ（下位約15.9%）',
+                            data: data.minus1,
+                            borderColor: 'rgba(251,191,36,0.7)',
+                            backgroundColor: 'rgba(251,191,36,0.06)',
+                            borderWidth: 1.5,
+                            borderDash: [4, 3],
+                            pointRadius: 0,
+                            fill: '-1',
+                            tension: 0.3,
+                            order: 3
+                        },
+                        {
+                            label: '−2σ（下位約2.3%）',
+                            data: data.minus2,
+                            borderColor: 'rgba(239,68,68,0.5)',
+                            backgroundColor: 'rgba(239,68,68,0.03)',
+                            borderWidth: 1,
+                            borderDash: [6, 4],
+                            pointRadius: 0,
+                            fill: false,
+                            tension: 0.3,
+                            order: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: '#9ca3af',
+                                font: { size: 11, family: "'Noto Sans JP', sans-serif" },
+                                usePointStyle: true,
+                                pointStyle: 'line',
+                                padding: 16
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(15,17,23,0.95)',
+                            titleColor: '#e8eaf0',
+                            bodyColor: '#9ca3af',
+                            borderColor: 'rgba(99,102,241,0.3)',
+                            borderWidth: 1,
+                            padding: 12,
+                            bodyFont: { family: "'Inter', monospace" },
+                            callbacks: {
+                                label: function (ctx) {
+                                    return `${ctx.dataset.label}: ${formatJPY(ctx.parsed.y)}万円`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: '#6b7280',
+                                font: { size: 10 },
+                                maxRotation: 0,
+                                callback: function (value, index) {
+                                    const period = parseInt(document.getElementById('p-period').value);
+                                    // Show fewer labels for long periods
+                                    if (period <= 10) return this.getLabelForValue(value);
+                                    if (period <= 20) return index % 2 === 0 ? this.getLabelForValue(value) : '';
+                                    if (period <= 35) return index % 5 === 0 ? this.getLabelForValue(value) : '';
+                                    return index % 10 === 0 ? this.getLabelForValue(value) : '';
+                                }
+                            },
+                            grid: { color: 'rgba(255,255,255,0.04)' }
+                        },
+                        y: {
+                            ticks: {
+                                color: '#6b7280',
+                                font: { size: 10 },
+                                callback: v => formatJPY(v) + '万円'
+                            },
+                            grid: { color: 'rgba(255,255,255,0.06)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ========== STATS ==========
+        function renderStats(data) {
+            const years = data.labels.length - 1;
+            const P0 = data.median[0];
+            const finalMedian = data.median[years];
+            const finalPlus1 = data.plus1[years];
+            const finalMinus1 = data.minus1[years];
+            const finalPlus2 = data.plus2[years];
+            const finalMinus2 = data.minus2[years];
+
+            const stats = [
+                { cls: 'plus2', label: '+2σ シナリオ', value: finalPlus2, sub: `倍率: ${(finalPlus2 / P0).toFixed(2)}x` },
+                { cls: 'plus1', label: '+1σ シナリオ', value: finalPlus1, sub: `倍率: ${(finalPlus1 / P0).toFixed(2)}x` },
+                { cls: 'median', label: '期待値（中央値）', value: finalMedian, sub: `倍率: ${(finalMedian / P0).toFixed(2)}x` },
+                { cls: 'minus1', label: '−1σ シナリオ', value: finalMinus1, sub: `倍率: ${(finalMinus1 / P0).toFixed(2)}x` },
+                { cls: 'minus2', label: '−2σ シナリオ', value: finalMinus2, sub: `倍率: ${(finalMinus2 / P0).toFixed(2)}x` }
+            ];
+
+            const grid = document.getElementById('stats-grid');
+            grid.innerHTML = stats.map(s => `
+    <div class="stat-card ${s.cls}">
+      <div class="stat-label">${s.label}</div>
+      <div class="stat-value">${formatJPY(s.value)}<span style="font-size:0.7rem;font-weight:400;color:var(--text-muted)">万円</span></div>
+      <div class="stat-sub">${s.sub}</div>
+    </div>
+  `).join('');
+        }
+
+        // ========== HELPERS ==========
+        function formatJPY(n) {
+            if (n >= 10000) {
+                return (n / 10000).toFixed(1).replace(/\.0$/, '') + '億';
+            }
+            return Math.round(n).toLocaleString('ja-JP');
+        }
+
+        // ========== UPDATE ==========
+        function updateSimulation() {
+            const mu = parseFloat(document.getElementById('p-return').value) / 100;
+            const sigma = parseFloat(document.getElementById('p-risk').value) / 100;
+            const P0 = parseFloat(document.getElementById('p-initial').value) || 1000;
+            const years = parseInt(document.getElementById('p-period').value);
+
+            // Update display values
+            document.getElementById('pv-return').textContent = document.getElementById('p-return').value + '%';
+            document.getElementById('pv-risk').textContent = document.getElementById('p-risk').value + '%';
+            document.getElementById('pv-period').textContent = years + '年';
+
+            // Calculate and render
+            const data = calculateScenarios(P0, mu, sigma, years);
+            renderChart(data);
+            renderStats(data);
+        }
+
+        // ========== INIT ==========
+        window.addEventListener('DOMContentLoaded', () => {
+            updateSimulation();
+        });
+    </script>
+</body>
+
+</html>
