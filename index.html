@@ -416,6 +416,7 @@
     .param-label {
       display: flex;
       justify-content: space-between;
+      align-items: center;
       font-size: 0.8rem;
       color: var(--text-secondary);
       margin-bottom: 8px;
@@ -424,6 +425,25 @@
     .param-value {
       color: var(--accent-light);
       font-weight: 600;
+    }
+
+    .param-num-input {
+      width: 64px;
+      background: var(--bg-glass);
+      border: 1px solid var(--border-glass);
+      border-radius: 6px;
+      padding: 3px 6px;
+      color: var(--accent-light);
+      font-size: 0.8rem;
+      font-weight: 600;
+      font-family: inherit;
+      text-align: right;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .param-num-input:focus {
+      border-color: var(--accent);
     }
 
     input[type="range"] {
@@ -799,14 +819,39 @@
   <div class="phase" id="phase-4">
     <div class="form-container">
       <div class="form-card">
-        <h2><span class="icon">🏦</span>資産・負債情報（万円）</h2>
+        <h2><span class="icon">🏦</span>資産情報（万円）</h2>
         <div class="form-grid">
           <div class="form-group"><label>預貯金</label><input type="number" id="asset-savings" placeholder="500"
               value="500"></div>
-          <div class="form-group"><label>投資資産（株・投信等）</label><input type="number" id="asset-investment" placeholder="200"
-              value="200"></div>
           <div class="form-group"><label>その他資産</label><input type="number" id="asset-other" placeholder="0" value="0">
           </div>
+        </div>
+      </div>
+      <div class="form-card">
+        <h2><span class="icon">📉</span>投資資産：受取用（債券・バランス型）</h2>
+        <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:12px">毎年の受取（取り崩し）を行い、残高に対して複利運用する資産です。</p>
+        <div class="form-grid">
+          <div class="form-group"><label>受取用 資産額（万円）</label><input type="number" id="asset-invest-withdraw"
+              placeholder="200" value="200"></div>
+          <div class="form-group"><label>毎年の受取額（万円/年）</label><input type="number" id="invest-annual-withdrawal"
+              placeholder="0" value="0"></div>
+          <div class="form-group"><label>年率複利（%・受取後残高に適用）</label><input type="number" id="invest-withdraw-rate"
+              placeholder="3" value="3" step="0.1"></div>
+        </div>
+      </div>
+      <div class="form-card">
+        <h2><span class="icon">📈</span>投資資産：増加用（株式型）</h2>
+        <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:12px">取り崩しを行わず、複利で増やしていく資産です。</p>
+        <div class="form-grid">
+          <div class="form-group"><label>増加用 資産額（万円）</label><input type="number" id="asset-invest-growth"
+              placeholder="200" value="200"></div>
+          <div class="form-group"><label>年率複利（%）</label><input type="number" id="invest-growth-rate" placeholder="5"
+              value="5" step="0.1"></div>
+        </div>
+      </div>
+      <div class="form-card">
+        <h2><span class="icon">💳</span>負債情報（万円）</h2>
+        <div class="form-grid">
           <div class="form-group"><label>住宅ローン残高</label><input type="number" id="debt-housing" placeholder="3000"
               value="0"></div>
           <div class="form-group"><label>住宅ローン年間返済額</label><input type="number" id="debt-housing-annual"
@@ -847,32 +892,66 @@
       <div class="sidebar">
         <h3>⚙️ シミュレーション設定</h3>
         <div class="param-group">
-          <div class="param-label"><span>年収上昇率</span><span class="param-value" id="pv-salary">1.0%</span></div>
-          <input type="range" id="p-salary" min="0" max="5" step="0.1" value="1" oninput="updateParam()">
+          <div class="param-label"><span>年収上昇率</span><input type="number" class="param-num-input" id="pn-salary" min="0"
+              max="5" step="0.1" value="1" oninput="setParam('salary',this.value)"> %</div>
+          <input type="range" id="p-salary" min="0" max="5" step="0.1" value="1"
+            oninput="setParam('salary',this.value)">
         </div>
         <div class="param-group">
-          <div class="param-label"><span>物価上昇率</span><span class="param-value" id="pv-inflation">1.0%</span></div>
-          <input type="range" id="p-inflation" min="0" max="5" step="0.1" value="1" oninput="updateParam()">
+          <div class="param-label"><span>物価上昇率</span><input type="number" class="param-num-input" id="pn-inflation"
+              min="0" max="5" step="0.1" value="1" oninput="setParam('inflation',this.value)"> %</div>
+          <input type="range" id="p-inflation" min="0" max="5" step="0.1" value="1"
+            oninput="setParam('inflation',this.value)">
         </div>
         <div class="param-group">
-          <div class="param-label"><span>運用利回り</span><span class="param-value" id="pv-return">3.0%</span></div>
-          <input type="range" id="p-return" min="0" max="10" step="0.1" value="3" oninput="updateParam()">
+          <div class="param-label"><span>預貯金運用利回り</span><input type="number" class="param-num-input" id="pn-return"
+              min="0" max="10" step="0.1" value="3" oninput="setParam('return',this.value)"> %</div>
+          <input type="range" id="p-return" min="0" max="10" step="0.1" value="3"
+            oninput="setParam('return',this.value)">
         </div>
         <div class="param-group">
-          <div class="param-label"><span>退職年齢</span><span class="param-value" id="pv-retire">65歳</span></div>
-          <input type="range" id="p-retire" min="50" max="75" step="1" value="65" oninput="updateParam()">
+          <div class="param-label"><span>受取用 年率複利</span><input type="number" class="param-num-input"
+              id="pn-withdraw-rate" min="0" max="10" step="0.1" value="3"
+              oninput="setParam('withdraw-rate',this.value)"> %</div>
+          <input type="range" id="p-withdraw-rate" min="0" max="10" step="0.1" value="3"
+            oninput="setParam('withdraw-rate',this.value)">
         </div>
         <div class="param-group">
-          <div class="param-label"><span>年金月額</span><span class="param-value" id="pv-pension">15万円</span></div>
-          <input type="range" id="p-pension" min="0" max="30" step="0.5" value="15" oninput="updateParam()">
+          <div class="param-label"><span>受取用 受取額</span><input type="number" class="param-num-input"
+              id="pn-withdraw-amount" min="0" max="9999" step="5" value="0"
+              oninput="setParam('withdraw-amount',this.value)"> 万円</div>
+          <input type="range" id="p-withdraw-amount" min="0" max="500" step="5" value="0"
+            oninput="setParam('withdraw-amount',this.value)">
         </div>
         <div class="param-group">
-          <div class="param-label"><span>年金開始年齢</span><span class="param-value" id="pv-pension-age">65歳</span></div>
-          <input type="range" id="p-pension-age" min="60" max="75" step="1" value="65" oninput="updateParam()">
+          <div class="param-label"><span>増加用 年率複利</span><input type="number" class="param-num-input" id="pn-growth-rate"
+              min="0" max="15" step="0.1" value="5" oninput="setParam('growth-rate',this.value)"> %</div>
+          <input type="range" id="p-growth-rate" min="0" max="15" step="0.1" value="5"
+            oninput="setParam('growth-rate',this.value)">
         </div>
         <div class="param-group">
-          <div class="param-label"><span>住居費増減</span><span class="param-value" id="pv-housing">±0%</span></div>
-          <input type="range" id="p-housing" min="-50" max="50" step="1" value="0" oninput="updateParam()">
+          <div class="param-label"><span>退職年齢</span><input type="number" class="param-num-input" id="pn-retire" min="50"
+              max="85" step="1" value="65" oninput="setParam('retire',this.value)"> 歳</div>
+          <input type="range" id="p-retire" min="50" max="75" step="1" value="65"
+            oninput="setParam('retire',this.value)">
+        </div>
+        <div class="param-group">
+          <div class="param-label"><span>年金月額</span><input type="number" class="param-num-input" id="pn-pension" min="0"
+              max="50" step="0.5" value="15" oninput="setParam('pension',this.value)"> 万円</div>
+          <input type="range" id="p-pension" min="0" max="30" step="0.5" value="15"
+            oninput="setParam('pension',this.value)">
+        </div>
+        <div class="param-group">
+          <div class="param-label"><span>年金開始年齢</span><input type="number" class="param-num-input" id="pn-pension-age"
+              min="60" max="75" step="1" value="65" oninput="setParam('pension-age',this.value)"> 歳</div>
+          <input type="range" id="p-pension-age" min="60" max="75" step="1" value="65"
+            oninput="setParam('pension-age',this.value)">
+        </div>
+        <div class="param-group">
+          <div class="param-label"><span>住居費増減</span><input type="number" class="param-num-input" id="pn-housing"
+              min="-50" max="50" step="1" value="0" oninput="setParam('housing',this.value)"> %</div>
+          <input type="range" id="p-housing" min="-50" max="50" step="1" value="0"
+            oninput="setParam('housing',this.value)">
         </div>
         <div class="param-group">
           <div class="param-label"><span>教育プラン</span><span class="param-value" id="pv-edu">公立中心</span></div>
@@ -1082,8 +1161,15 @@
         extraExpenses: [],
         // Assets
         assetSavings: getNum('asset-savings'),
-        assetInvestment: getNum('asset-investment'),
         assetOther: getNum('asset-other'),
+        // Investment: Withdrawal fund (bonds/balanced)
+        assetInvestWithdraw: getNum('asset-invest-withdraw'),
+        investAnnualWithdrawal: getNum('invest-annual-withdrawal'),
+        investWithdrawRate: getNum('invest-withdraw-rate') / 100,
+        // Investment: Growth fund (equity)
+        assetInvestGrowth: getNum('asset-invest-growth'),
+        investGrowthRate: getNum('invest-growth-rate') / 100,
+        // Debts
         debtHousing: getNum('debt-housing'),
         debtHousingAnnual: getNum('debt-housing-annual'),
         debtHousingYears: getNum('debt-housing-years'),
@@ -1167,7 +1253,12 @@
       const startAge = clientData.age;
       planData = [];
 
-      let balance = clientData.assetSavings + clientData.assetInvestment + clientData.assetOther - clientData.debtOther;
+      let cashBalance = clientData.assetSavings + clientData.assetOther - clientData.debtOther;
+      let withdrawBalance = clientData.assetInvestWithdraw;
+      let growthBalance = clientData.assetInvestGrowth;
+      const withdrawRate = parseFloat(document.getElementById('p-withdraw-rate').value) / 100;
+      const withdrawAmount = parseFloat(document.getElementById('p-withdraw-amount').value);
+      const growthRate = parseFloat(document.getElementById('p-growth-rate').value) / 100;
       let mainIncome = clientData.incomeMain;
       let spouseIncome = clientData.incomeSpouse;
 
@@ -1207,7 +1298,10 @@
           }
         });
 
-        let totalIncome = salary + spSalary + pension + bonus + extraIncomeTotal;
+        // Investment withdrawal from withdraw fund (cannot exceed current balance)
+        let investWithdrawal = Math.min(withdrawAmount, Math.max(withdrawBalance, 0));
+
+        let totalIncome = salary + spSalary + pension + bonus + extraIncomeTotal + investWithdrawal;
 
         // === EXPENSES ===
         const inflationFactor = Math.pow(1 + p.inflation, i);
@@ -1247,8 +1341,21 @@
 
         // Balance
         let netIncome = totalIncome - totalExpense;
-        let investGain = balance > 0 ? balance * p.investReturn : 0;
-        balance = balance + netIncome + investGain;
+
+        // Withdraw fund: deduct withdrawal, then apply compound rate
+        withdrawBalance -= investWithdrawal;
+        let withdrawGain = withdrawBalance > 0 ? withdrawBalance * withdrawRate : 0;
+        withdrawBalance += withdrawGain;
+
+        // Growth fund: no withdrawal, just compound
+        let growthGain = growthBalance > 0 ? growthBalance * growthRate : 0;
+        growthBalance += growthGain;
+
+        // Cash balance: net income + investment return on cash portion
+        let investGain = cashBalance > 0 ? cashBalance * p.investReturn : 0;
+        cashBalance = cashBalance + netIncome + investGain;
+
+        let balance = cashBalance + withdrawBalance + growthBalance;
 
         planData.push({
           year, age, spouseAge,
@@ -1258,6 +1365,7 @@
           spSalary: Math.round(spSalary),
           pension: Math.round(pension),
           bonus: Math.round(bonus),
+          investWithdrawal: Math.round(investWithdrawal),
           extraIncomeTotal: Math.round(extraIncomeTotal),
           extraIncomeDetails,
           totalIncome: Math.round(totalIncome),
@@ -1272,6 +1380,10 @@
           totalExpense: Math.round(totalExpense),
           netIncome: Math.round(netIncome),
           investGain: Math.round(investGain),
+          withdrawGain: Math.round(withdrawGain),
+          withdrawBalance: Math.round(withdrawBalance),
+          growthGain: Math.round(growthGain),
+          growthBalance: Math.round(growthBalance),
           balance: Math.round(balance)
         });
 
@@ -1316,6 +1428,7 @@
       if (clientData.hasSpouse) html += buildRow('配偶者収入', planData.map(d => d.spSalary));
       html += buildRow('年金', planData.map(d => d.pension));
       html += buildRow('退職金', planData.map(d => d.bonus));
+      html += buildRow('受取用 受取額', planData.map(d => d.investWithdrawal));
 
       // Extra income rows
       const eiNames = new Set();
@@ -1347,7 +1460,11 @@
       // Summary
       html += `<tr class="section-header"><td>【収支・資産】</td>${planData.map(() => '<td></td>').join('')}</tr>`;
       html += buildRow('年間収支', planData.map(d => d.netIncome), false, true);
-      html += buildRow('運用益', planData.map(d => d.investGain));
+      html += buildRow('運用益（預貯金）', planData.map(d => d.investGain));
+      html += buildRow('受取用 運用益', planData.map(d => d.withdrawGain));
+      html += buildRow('受取用 残高', planData.map(d => d.withdrawBalance));
+      html += buildRow('増加用 運用益', planData.map(d => d.growthGain));
+      html += buildRow('増加用 残高', planData.map(d => d.growthBalance));
       html += buildRow('金融資産残高', planData.map(d => d.balance), false, true, true);
 
       html += '</tbody>';
@@ -1440,24 +1557,32 @@
     // ========== GENERATE PLAN ==========
     function generatePlan() {
       saveFormData();
+      // Sync sidebar sliders and number inputs from form data
+      const syncPair = (id, val) => {
+        const r = document.getElementById('p-' + id);
+        const n = document.getElementById('pn-' + id);
+        if (r) r.value = val;
+        if (n) n.value = val;
+      };
+      syncPair('withdraw-rate', clientData.investWithdrawRate * 100);
+      syncPair('withdraw-amount', clientData.investAnnualWithdrawal);
+      syncPair('growth-rate', clientData.investGrowthRate * 100);
       goStep(6);
-      calculatePlan();
-      renderTable('lifeplan-table');
-      renderChart('asset-chart');
+      updateParam();
+    }
+
+    // ========== SYNC PARAM (slider <-> number input) ==========
+    function setParam(id, val) {
+      const r = document.getElementById('p-' + id);
+      const n = document.getElementById('pn-' + id);
+      if (r) r.value = val;
+      if (n) n.value = val;
+      updateParam();
     }
 
     // ========== UPDATE PARAMS ==========
     function updateParam() {
-      document.getElementById('pv-salary').textContent = document.getElementById('p-salary').value + '%';
-      document.getElementById('pv-inflation').textContent = document.getElementById('p-inflation').value + '%';
-      document.getElementById('pv-return').textContent = document.getElementById('p-return').value + '%';
-      document.getElementById('pv-retire').textContent = document.getElementById('p-retire').value + '歳';
-      document.getElementById('pv-pension').textContent = document.getElementById('p-pension').value + '万円';
-      document.getElementById('pv-pension-age').textContent = document.getElementById('p-pension-age').value + '歳';
-      const h = document.getElementById('p-housing').value;
-      document.getElementById('pv-housing').textContent = (h >= 0 ? '+' : '') + h + '%';
       document.getElementById('pv-edu').textContent = document.getElementById('p-edu').value === 'public' ? '公立中心' : '私立中心';
-
       calculatePlan();
       renderTable('lifeplan-table');
       renderChart('asset-chart');
