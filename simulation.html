@@ -273,6 +273,26 @@
             border: none;
         }
 
+        .param-num-input {
+            width: 68px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-glass);
+            border-radius: 6px;
+            padding: 3px 7px;
+            color: var(--accent-light);
+            font-size: 0.85rem;
+            font-weight: 700;
+            font-family: 'Inter', monospace;
+            text-align: right;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .param-num-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--accent-glow);
+        }
+
         .number-input {
             width: 100%;
             background: rgba(255, 255, 255, 0.04);
@@ -525,10 +545,14 @@
                 <div class="param-group">
                     <div class="param-label">
                         <span>年率リターン</span>
-                        <span class="param-value" id="pv-return">5.0%</span>
+                        <span style="display:flex;align-items:center;gap:4px">
+                            <input type="number" class="param-num-input" id="pn-return" min="0" max="20" step="0.1"
+                                value="5" oninput="setSimParam('return',this.value)">
+                            <span class="param-value">%</span>
+                        </span>
                     </div>
                     <input type="range" id="p-return" min="0" max="20" step="0.1" value="5"
-                        oninput="updateSimulation()">
+                        oninput="setSimParam('return',this.value)">
                 </div>
             </div>
 
@@ -538,9 +562,14 @@
                 <div class="param-group">
                     <div class="param-label">
                         <span>年率標準偏差</span>
-                        <span class="param-value" id="pv-risk">15.0%</span>
+                        <span style="display:flex;align-items:center;gap:4px">
+                            <input type="number" class="param-num-input" id="pn-risk" min="0" max="40" step="0.1"
+                                value="15" oninput="setSimParam('risk',this.value)">
+                            <span class="param-value">%</span>
+                        </span>
                     </div>
-                    <input type="range" id="p-risk" min="0" max="40" step="0.1" value="15" oninput="updateSimulation()">
+                    <input type="range" id="p-risk" min="0" max="40" step="0.1" value="15"
+                        oninput="setSimParam('risk',this.value)">
                 </div>
             </div>
 
@@ -560,9 +589,14 @@
                 <div class="param-group">
                     <div class="param-label">
                         <span>投資期間</span>
-                        <span class="param-value" id="pv-period">30年</span>
+                        <span style="display:flex;align-items:center;gap:4px">
+                            <input type="number" class="param-num-input" id="pn-period" min="1" max="50" step="1"
+                                value="30" oninput="setSimParam('period',this.value)">
+                            <span class="param-value">年</span>
+                        </span>
                     </div>
-                    <input type="range" id="p-period" min="1" max="50" step="1" value="30" oninput="updateSimulation()">
+                    <input type="range" id="p-period" min="1" max="50" step="1" value="30"
+                        oninput="setSimParam('period',this.value)">
                 </div>
             </div>
 
@@ -572,10 +606,11 @@
                 <div class="param-group">
                     <div class="param-label">
                         <span>回帰速度 κ（カッパ）</span>
-                        <span class="param-value" id="pv-kappa">0.15</span>
+                        <input type="number" class="param-num-input" id="pn-kappa" min="0" max="0.50" step="0.01"
+                            value="0.15" oninput="setSimParam('kappa',this.value)">
                     </div>
                     <input type="range" id="p-kappa" min="0" max="0.50" step="0.01" value="0.15"
-                        oninput="updateSimulation()">
+                        oninput="setSimParam('kappa',this.value)">
                     <div class="input-suffix">0＝回帰なし（従来モデル）　大きいほど強い回帰</div>
                 </div>
             </div>
@@ -828,6 +863,15 @@
             return Math.round(n).toLocaleString('ja-JP');
         }
 
+        // ========== SYNC PARAM (slider <-> number input) ==========
+        function setSimParam(id, val) {
+            const r = document.getElementById('p-' + id);
+            const n = document.getElementById('pn-' + id);
+            if (r) r.value = val;
+            if (n) n.value = val;
+            updateSimulation();
+        }
+
         // ========== UPDATE ==========
         function updateSimulation() {
             const mu = parseFloat(document.getElementById('p-return').value) / 100;
@@ -836,11 +880,13 @@
             const years = parseInt(document.getElementById('p-period').value);
             const kappa = parseFloat(document.getElementById('p-kappa').value);
 
-            // Update display values
-            document.getElementById('pv-return').textContent = document.getElementById('p-return').value + '%';
-            document.getElementById('pv-risk').textContent = document.getElementById('p-risk').value + '%';
-            document.getElementById('pv-period').textContent = years + '年';
-            document.getElementById('pv-kappa').textContent = kappa.toFixed(2);
+            // Sync number inputs from sliders (in case called from slider directly)
+            const sync = (id) => {
+                const r = document.getElementById('p-' + id);
+                const n = document.getElementById('pn-' + id);
+                if (r && n && document.activeElement !== n) n.value = r.value;
+            };
+            sync('return'); sync('risk'); sync('period'); sync('kappa');
 
             // Calculate and render
             const data = calculateScenarios(P0, mu, sigma, years, kappa);
