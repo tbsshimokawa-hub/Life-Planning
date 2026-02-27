@@ -1,0 +1,1627 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ライフプランニングシステム | Money Advice Center</title>
+  <meta name="description" content="FP・IFA向けライフプランニング表作成システム">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Inter:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0f1117;
+      --bg-secondary: #1a1d2e;
+      --bg-card: rgba(26, 29, 46, 0.8);
+      --bg-glass: rgba(255, 255, 255, 0.05);
+      --border-glass: rgba(255, 255, 255, 0.1);
+      --text-primary: #e8eaf0;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
+      --accent: #6366f1;
+      --accent-light: #818cf8;
+      --accent-glow: rgba(99, 102, 241, 0.3);
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --gradient-1: linear-gradient(135deg, #6366f1, #8b5cf6);
+      --gradient-2: linear-gradient(135deg, #0f1117 0%, #1a1d2e 100%);
+      --radius: 12px;
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Noto Sans JP', 'Inter', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle at 30% 30%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 70% 70%, rgba(139, 92, 246, 0.06) 0%, transparent 50%);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* Header */
+    .header {
+      background: var(--bg-card);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-glass);
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header h1 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      background: var(--gradient-1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 0.02em;
+    }
+
+    .header .subtitle {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Progress Stepper */
+    .stepper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 24px 32px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .step-item.active {
+      color: var(--accent-light);
+      font-weight: 600;
+    }
+
+    .step-item.completed {
+      color: var(--success);
+    }
+
+    .step-circle {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border: 2px solid var(--text-muted);
+      transition: all 0.3s;
+    }
+
+    .step-item.active .step-circle {
+      border-color: var(--accent);
+      background: var(--accent-glow);
+      color: var(--accent-light);
+      box-shadow: 0 0 16px var(--accent-glow);
+    }
+
+    .step-item.completed .step-circle {
+      border-color: var(--success);
+      background: rgba(34, 197, 94, 0.15);
+      color: var(--success);
+    }
+
+    .step-line {
+      width: 40px;
+      height: 2px;
+      background: var(--text-muted);
+      opacity: 0.3;
+    }
+
+    .step-line.completed {
+      background: var(--success);
+      opacity: 1;
+    }
+
+    /* Phase containers */
+    .phase {
+      display: none;
+      position: relative;
+      z-index: 1;
+    }
+
+    .phase.active {
+      display: block;
+    }
+
+    /* Form styles */
+    .form-container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 32px 60px;
+    }
+
+    .form-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius);
+      padding: 32px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .form-card h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 24px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-glass);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .form-card h2 .icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--gradient-1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group.full {
+      grid-column: 1 / -1;
+    }
+
+    .form-group label {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .form-group input,
+    .form-group select {
+      background: var(--bg-glass);
+      border: 1px solid var(--border-glass);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      font-family: inherit;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .form-group input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .form-group select option {
+      background: var(--bg-secondary);
+    }
+
+    /* Children list */
+    .children-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .child-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      background: var(--bg-glass);
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-glass);
+    }
+
+    .child-row input {
+      flex: 1;
+    }
+
+    .btn-remove {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--danger);
+      cursor: pointer;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .btn-remove:hover {
+      background: rgba(239, 68, 68, 0.2);
+    }
+
+    /* Life events */
+    .event-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      background: var(--bg-glass);
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-glass);
+      margin-bottom: 8px;
+    }
+
+    .event-row input,
+    .event-row select {
+      flex: 1;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 28px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      transition: all 0.3s;
+    }
+
+    .btn-primary {
+      background: var(--gradient-1);
+      color: white;
+      box-shadow: 0 4px 16px var(--accent-glow);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px var(--accent-glow);
+    }
+
+    .btn-secondary {
+      background: var(--bg-glass);
+      border: 1px solid var(--border-glass);
+      color: var(--text-primary);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: white;
+      box-shadow: 0 4px 16px rgba(34, 197, 94, 0.3);
+    }
+
+    .btn-add {
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px dashed var(--accent);
+      color: var(--accent-light);
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+      width: 100%;
+    }
+
+    .btn-add:hover {
+      background: rgba(99, 102, 241, 0.2);
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 32px;
+    }
+
+    /* Dashboard layout */
+    .dashboard {
+      display: flex;
+      height: calc(100vh - 120px);
+    }
+
+    .sidebar {
+      width: 320px;
+      min-width: 320px;
+      background: var(--bg-card);
+      backdrop-filter: blur(20px);
+      border-right: 1px solid var(--border-glass);
+      padding: 24px;
+      overflow-y: auto;
+    }
+
+    .sidebar h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .param-group {
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-glass);
+    }
+
+    .param-group:last-child {
+      border-bottom: none;
+    }
+
+    .param-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+
+    .param-value {
+      color: var(--accent-light);
+      font-weight: 600;
+    }
+
+    .param-num-input {
+      width: 64px;
+      background: var(--bg-glass);
+      border: 1px solid var(--border-glass);
+      border-radius: 6px;
+      padding: 3px 6px;
+      color: var(--accent-light);
+      font-size: 0.8rem;
+      font-weight: 600;
+      font-family: inherit;
+      text-align: right;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .param-num-input:focus {
+      border-color: var(--accent);
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 6px;
+      -webkit-appearance: none;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--gradient-1);
+      box-shadow: 0 0 8px var(--accent-glow);
+      cursor: pointer;
+    }
+
+    .main-content {
+      flex: 1;
+      overflow: auto;
+      padding: 24px;
+    }
+
+    /* Life plan table */
+    .table-wrapper {
+      overflow-x: auto;
+      margin-bottom: 24px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border-glass);
+      background: var(--bg-card);
+    }
+
+    #lifeplan-table {
+      border-collapse: collapse;
+      font-size: 0.72rem;
+      white-space: nowrap;
+      width: max-content;
+      min-width: 100%;
+    }
+
+    #lifeplan-table th,
+    #lifeplan-table td {
+      padding: 6px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      text-align: right;
+    }
+
+    #lifeplan-table th {
+      background: rgba(99, 102, 241, 0.15);
+      color: var(--accent-light);
+      font-weight: 600;
+      position: sticky;
+      left: 0;
+      z-index: 2;
+    }
+
+    #lifeplan-table td:first-child {
+      background: var(--bg-secondary);
+      font-weight: 500;
+      text-align: left;
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      min-width: 120px;
+    }
+
+    #lifeplan-table .section-header {
+      background: rgba(99, 102, 241, 0.08) !important;
+      font-weight: 700;
+      color: var(--accent-light);
+    }
+
+    #lifeplan-table .total-row {
+      background: rgba(99, 102, 241, 0.05) !important;
+      font-weight: 700;
+    }
+
+    #lifeplan-table .balance-row {
+      font-weight: 700;
+      font-size: 0.78rem;
+    }
+
+    #lifeplan-table .negative {
+      color: var(--danger);
+    }
+
+    #lifeplan-table .positive {
+      color: var(--success);
+    }
+
+    #lifeplan-table .event-cell {
+      font-size: 0.65rem;
+      color: var(--warning);
+      text-align: center;
+      max-width: 80px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Chart */
+    .chart-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+
+    /* PDF */
+    .pdf-section {
+      padding: 20px;
+    }
+
+    .pdf-header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--accent);
+    }
+
+    #pdf-target {
+      background: white;
+      color: #1a1a1a;
+      padding: 24px;
+      display: none;
+    }
+
+    #pdf-target table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 9px;
+    }
+
+    #pdf-target th,
+    #pdf-target td {
+      padding: 4px 6px;
+      border: 1px solid #ccc;
+      text-align: right;
+    }
+
+    #pdf-target th {
+      background: #4f46e5;
+      color: white;
+    }
+
+    #pdf-target td:first-child {
+      text-align: left;
+      font-weight: 600;
+      background: #f3f4f6;
+    }
+
+    #pdf-target .negative {
+      color: #dc2626;
+    }
+
+    #pdf-target .positive {
+      color: #16a34a;
+    }
+
+    #pdf-target .section-header {
+      background: #e0e7ff !important;
+      font-weight: 700;
+      color: #4338ca;
+    }
+
+    #pdf-target .total-row {
+      background: #f0f0f0 !important;
+      font-weight: 700;
+    }
+
+    #pdf-target .event-cell {
+      font-size: 7px;
+      color: #d97706;
+      text-align: center;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .dashboard {
+        flex-direction: column;
+        height: auto;
+      }
+
+      .sidebar {
+        width: 100%;
+        min-width: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--border-glass);
+      }
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    .form-card {
+      animation: fadeIn 0.4s ease;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <h1>📊 ライフプランニングシステム</h1>
+      <div class="subtitle">Money Advice Center</div>
+    </div>
+    <div id="header-actions">
+      <a href="simulation.html" class="btn btn-primary"
+        style="text-decoration:none;font-size:0.8rem;padding:8px 20px">📈 リスク・リターン シミュレーション</a>
+    </div>
+  </div>
+
+  <!-- Stepper -->
+  <div class="stepper" id="stepper">
+    <div class="step-item active" data-step="1">
+      <div class="step-circle">1</div><span>基本情報</span>
+    </div>
+    <div class="step-line"></div>
+    <div class="step-item" data-step="2">
+      <div class="step-circle">2</div><span>収入</span>
+    </div>
+    <div class="step-line"></div>
+    <div class="step-item" data-step="3">
+      <div class="step-circle">3</div><span>支出</span>
+    </div>
+    <div class="step-line"></div>
+    <div class="step-item" data-step="4">
+      <div class="step-circle">4</div><span>資産・負債</span>
+    </div>
+    <div class="step-line"></div>
+    <div class="step-item" data-step="5">
+      <div class="step-circle">5</div><span>ライフイベント</span>
+    </div>
+    <div class="step-line"></div>
+    <div class="step-item" data-step="6">
+      <div class="step-circle">6</div><span>プラン表</span>
+    </div>
+  </div>
+
+  <!-- Phase 1: Step 1 - Basic Info -->
+  <div class="phase active" id="phase-1">
+    <div class="form-container">
+      <div class="form-card">
+        <h2><span class="icon">👤</span>基本情報</h2>
+        <div class="form-grid">
+          <div class="form-group"><label>お名前</label><input type="text" id="client-name" placeholder="山田 太郎"></div>
+          <div class="form-group"><label>現在の年齢</label><input type="number" id="client-age" placeholder="35" value="35"
+              min="0" max="100"></div>
+          <div class="form-group"><label>性別</label>
+            <select id="client-gender">
+              <option value="male">男性</option>
+              <option value="female">女性</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="form-card">
+        <h2><span class="icon">💑</span>配偶者情報</h2>
+        <div id="spouse-section"></div>
+        <button class="btn-add" id="btn-add-spouse" onclick="addSpouse()" style="margin-top:12px">＋ 配偶者を追加</button>
+      </div>
+      <div class="form-card">
+        <h2><span class="icon">👶</span>お子様情報</h2>
+        <div class="children-list" id="children-list"></div>
+        <button class="btn-add" onclick="addChild()" style="margin-top:12px">＋ お子様を追加</button>
+      </div>
+      <div class="form-actions">
+        <div></div>
+        <button class="btn btn-primary" onclick="goStep(2)">次へ →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phase 2: Income -->
+  <div class="phase" id="phase-2">
+    <div class="form-container">
+      <div class="form-card">
+        <h2><span class="icon">💰</span>本人給与</h2>
+        <div class="form-grid">
+          <div class="form-group"><label>年収（万円）</label><input type="number" id="income-main" placeholder="500"
+              value="500"></div>
+          <div class="form-group"><label>開始年齢</label><input type="number" id="income-main-start" value="35" min="0"
+              max="100"></div>
+          <div class="form-group"><label>終了年齢</label><input type="number" id="income-main-end" value="60" min="0"
+              max="100"></div>
+        </div>
+      </div>
+      <div class="form-card" id="spouse-income-card" style="display:none">
+        <h2><span class="icon">💰</span>配偶者給与</h2>
+        <div class="form-grid">
+          <div class="form-group"><label>年収（万円）</label><input type="number" id="income-spouse" placeholder="300"
+              value="0"></div>
+          <div class="form-group"><label>開始年齢</label><input type="number" id="income-spouse-start" value="35" min="0"
+              max="100"></div>
+          <div class="form-group"><label>終了年齢</label><input type="number" id="income-spouse-end" value="60" min="0"
+              max="100"></div>
+        </div>
+      </div>
+      <div class="form-card">
+        <h2><span class="icon">🏆</span>退職金</h2>
+        <div class="form-grid">
+          <div class="form-group"><label>退職金見込み（万円）</label><input type="number" id="retirement-bonus" placeholder="2000"
+              value="1500"></div>
+          <div class="form-group"><label>受取年齢</label><input type="number" id="retirement-age" placeholder="65"
+              value="65" min="0" max="100"></div>
+        </div>
+      </div>
+      <div class="form-card">
+        <h2><span class="icon">📋</span>その他の収入</h2>
+        <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:12px">再雇用収入、個人年金、不動産収入など自由に追加できます。</p>
+        <div id="extra-income-list"></div>
+        <button class="btn-add" onclick="addExtraIncome()" style="margin-top:12px">＋ 収入項目を追加</button>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="goStep(1)">← 戻る</button>
+        <button class="btn btn-primary" onclick="goStep(3)">次へ →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phase 3: Expenses -->
+  <div class="phase" id="phase-3">
+    <div class="form-container">
+      <div class="form-card">
+        <h2><span class="icon">🏠</span>基本支出（年間・万円）</h2>
+        <div class="form-grid">
+          <div class="form-group"><label>基本生活費</label><input type="number" id="exp-living" placeholder="240"
+              value="240"></div>
+          <div class="form-group"><label>家賃（万円/年）</label><input type="number" id="exp-rent" placeholder="144"
+              value="144"></div>
+          <div class="form-group"><label>家賃 開始年齢</label><input type="number" id="exp-rent-start" value="35" min="0"
+              max="100"></div>
+          <div class="form-group"><label>家賃 終了年齢</label><input type="number" id="exp-rent-end" value="100" min="0"
+              max="100"></div>
+          <div class="form-group"><label>保険料</label><input type="number" id="exp-insurance" placeholder="36" value="36">
+          </div>
+          <div class="form-group"><label>保険料 終了年齢</label><input type="number" id="exp-insurance-end" value="65" min="0"
+              max="100"></div>
+        </div>
+        <p style="font-size:0.75rem;color:var(--text-muted);margin-top:8px">※ 住宅ローン返済は「資産・負債」画面で入力してください（二重登録防止）</p>
+      </div>
+      <div class="form-card">
+        <h2><span class="icon">📋</span>その他の支出</h2>
+        <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:12px">
+          車両費、習い事、趣味費用など自由に追加できます。終了年齢を空欄にすると一度きりの支出になります。</p>
+        <div id="extra-expense-list"></div>
+        <button class="btn-add" onclick="addExtraExpense()" style="margin-top:12px">＋ 支出項目を追加</button>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="goStep(2)">← 戻る</button>
+        <button class="btn btn-primary" onclick="goStep(4)">次へ →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phase 4: Assets -->
+  <div class="phase" id="phase-4">
+    <div class="form-container">
+      <div class="form-card">
+        <h2><span class="icon">🏦</span>資産情報（万円）</h2>
+        <div class="form-grid">
+          <div class="form-group"><label>預貯金</label><input type="number" id="asset-savings" placeholder="500"
+              value="500"></div>
+          <div class="form-group"><label>その他資産</label><input type="number" id="asset-other" placeholder="0" value="0">
+          </div>
+        </div>
+      </div>
+      <div class="form-card">
+        <h2><span class="icon">📉</span>投資資産：受取用（債券・バランス型）</h2>
+        <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:12px">毎年の受取（取り崩し）を行い、残高に対して複利運用する資産です。</p>
+        <div class="form-grid">
+          <div class="form-group"><label>受取用 資産額（万円）</label><input type="number" id="asset-invest-withdraw"
+              placeholder="200" value="200"></div>
+          <div class="form-group"><label>毎年の受取額（万円/年）</label><input type="number" id="invest-annual-withdrawal"
+              placeholder="0" value="0"></div>
+          <div class="form-group"><label>年率複利（%・受取後残高に適用）</label><input type="number" id="invest-withdraw-rate"
+              placeholder="3" value="3" step="0.1"></div>
+        </div>
+      </div>
+      <div class="form-card">
+        <h2><span class="icon">📈</span>投資資産：増加用（株式型）</h2>
+        <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:12px">取り崩しを行わず、複利で増やしていく資産です。</p>
+        <div class="form-grid">
+          <div class="form-group"><label>増加用 資産額（万円）</label><input type="number" id="asset-invest-growth"
+              placeholder="200" value="200"></div>
+          <div class="form-group"><label>年率複利（%）</label><input type="number" id="invest-growth-rate" placeholder="5"
+              value="5" step="0.1"></div>
+        </div>
+      </div>
+      <div class="form-card">
+        <h2><span class="icon">💳</span>負債情報（万円）</h2>
+        <div class="form-grid">
+          <div class="form-group"><label>住宅ローン残高</label><input type="number" id="debt-housing" placeholder="3000"
+              value="0"></div>
+          <div class="form-group"><label>住宅ローン年間返済額</label><input type="number" id="debt-housing-annual"
+              placeholder="120" value="0"></div>
+          <div class="form-group"><label>住宅ローン残年数</label><input type="number" id="debt-housing-years" placeholder="30"
+              value="0"></div>
+          <div class="form-group"><label>その他負債残高</label><input type="number" id="debt-other" placeholder="0" value="0">
+          </div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="goStep(3)">← 戻る</button>
+        <button class="btn btn-primary" onclick="goStep(5)">次へ →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phase 5: Life Events -->
+  <div class="phase" id="phase-5">
+    <div class="form-container">
+      <div class="form-card">
+        <h2><span class="icon">🎯</span>ライフイベント</h2>
+        <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:16px">将来予定しているイベントを追加してください。</p>
+        <div id="events-list"></div>
+        <button class="btn-add" onclick="addEvent()" style="margin-top:12px">＋ イベントを追加</button>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="goStep(4)">← 戻る</button>
+        <button class="btn btn-success" onclick="generatePlan()">✨ ライフプラン表を作成</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phase 6: Dashboard -->
+  <div class="phase" id="phase-6">
+    <div class="dashboard">
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <h3>⚙️ シミュレーション設定</h3>
+        <div class="param-group">
+          <div class="param-label"><span>年収上昇率</span><input type="number" class="param-num-input" id="pn-salary" min="0"
+              max="5" step="0.1" value="1" oninput="setParam('salary',this.value)"> %</div>
+          <input type="range" id="p-salary" min="0" max="5" step="0.1" value="1"
+            oninput="setParam('salary',this.value)">
+        </div>
+        <div class="param-group">
+          <div class="param-label"><span>物価上昇率</span><input type="number" class="param-num-input" id="pn-inflation"
+              min="0" max="5" step="0.1" value="1" oninput="setParam('inflation',this.value)"> %</div>
+          <input type="range" id="p-inflation" min="0" max="5" step="0.1" value="1"
+            oninput="setParam('inflation',this.value)">
+        </div>
+        <div class="param-group">
+          <div class="param-label"><span>預貯金運用利回り</span><input type="number" class="param-num-input" id="pn-return"
+              min="0" max="10" step="0.1" value="3" oninput="setParam('return',this.value)"> %</div>
+          <input type="range" id="p-return" min="0" max="10" step="0.1" value="3"
+            oninput="setParam('return',this.value)">
+        </div>
+        <div class="param-group">
+          <div class="param-label"><span>受取用 年率複利</span><input type="number" class="param-num-input"
+              id="pn-withdraw-rate" min="0" max="10" step="0.1" value="3"
+              oninput="setParam('withdraw-rate',this.value)"> %</div>
+          <input type="range" id="p-withdraw-rate" min="0" max="10" step="0.1" value="3"
+            oninput="setParam('withdraw-rate',this.value)">
+        </div>
+        <div class="param-group">
+          <div class="param-label"><span>受取用 受取額</span><input type="number" class="param-num-input"
+              id="pn-withdraw-amount" min="0" max="9999" step="5" value="0"
+              oninput="setParam('withdraw-amount',this.value)"> 万円</div>
+          <input type="range" id="p-withdraw-amount" min="0" max="500" step="5" value="0"
+            oninput="setParam('withdraw-amount',this.value)">
+        </div>
+        <div class="param-group">
+          <div class="param-label"><span>増加用 年率複利</span><input type="number" class="param-num-input" id="pn-growth-rate"
+              min="0" max="15" step="0.1" value="5" oninput="setParam('growth-rate',this.value)"> %</div>
+          <input type="range" id="p-growth-rate" min="0" max="15" step="0.1" value="5"
+            oninput="setParam('growth-rate',this.value)">
+        </div>
+        <div class="param-group">
+          <div class="param-label"><span>退職年齢</span><input type="number" class="param-num-input" id="pn-retire" min="50"
+              max="85" step="1" value="65" oninput="setParam('retire',this.value)"> 歳</div>
+          <input type="range" id="p-retire" min="50" max="75" step="1" value="65"
+            oninput="setParam('retire',this.value)">
+        </div>
+        <div class="param-group">
+          <div class="param-label"><span>年金月額</span><input type="number" class="param-num-input" id="pn-pension" min="0"
+              max="50" step="0.5" value="15" oninput="setParam('pension',this.value)"> 万円</div>
+          <input type="range" id="p-pension" min="0" max="30" step="0.5" value="15"
+            oninput="setParam('pension',this.value)">
+        </div>
+        <div class="param-group">
+          <div class="param-label"><span>年金開始年齢</span><input type="number" class="param-num-input" id="pn-pension-age"
+              min="60" max="75" step="1" value="65" oninput="setParam('pension-age',this.value)"> 歳</div>
+          <input type="range" id="p-pension-age" min="60" max="75" step="1" value="65"
+            oninput="setParam('pension-age',this.value)">
+        </div>
+        <div class="param-group">
+          <div class="param-label"><span>住居費増減</span><input type="number" class="param-num-input" id="pn-housing"
+              min="-50" max="50" step="1" value="0" oninput="setParam('housing',this.value)"> %</div>
+          <input type="range" id="p-housing" min="-50" max="50" step="1" value="0"
+            oninput="setParam('housing',this.value)">
+        </div>
+        <div class="param-group">
+          <div class="param-label"><span>教育プラン</span><span class="param-value" id="pv-edu">公立中心</span></div>
+          <select id="p-edu" onchange="updateParam()"
+            style="width:100%;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:8px;padding:8px;color:var(--text-primary);font-family:inherit;font-size:0.8rem">
+            <option value="public">公立中心</option>
+            <option value="private">私立中心</option>
+          </select>
+        </div>
+        <button class="btn btn-success" onclick="exportPDF()" style="width:100%;margin-top:16px">📄 PDF出力</button>
+        <button class="btn btn-secondary" onclick="goStep(1)" style="width:100%;margin-top:8px">← ヒアリングに戻る</button>
+      </div>
+      <!-- Main -->
+      <div class="main-content">
+        <div class="chart-container">
+          <canvas id="asset-chart" height="200"></canvas>
+        </div>
+        <div class="table-wrapper">
+          <table id="lifeplan-table"></table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden PDF target -->
+  <div id="pdf-target">
+    <div class="pdf-header">
+      <h2 style="color:#4f46e5;margin-bottom:4px">ライフプランニング表</h2>
+      <p id="pdf-client-info" style="font-size:11px;color:#666"></p>
+      <p id="pdf-date" style="font-size:10px;color:#999"></p>
+    </div>
+    <table id="pdf-table"></table>
+    <div style="margin-top:16px">
+      <canvas id="pdf-chart" width="1100" height="300"></canvas>
+    </div>
+    <div style="margin-top:12px;font-size:8px;color:#999;text-align:center">
+      ※ 本資料はシミュレーションであり、将来の運用成果を保証するものではありません。<br>
+      作成：Money Advice Center
+    </div>
+  </div>
+
+  <script>
+    // ========== STATE ==========
+    let clientData = {};
+    let planData = [];
+    let chartInstance = null;
+    let childCounter = 0;
+    let eventCounter = 0;
+    let extraIncomeCounter = 0;
+    let extraExpenseCounter = 0;
+    let hasSpouse = false;
+
+    const inputStyle = 'background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:8px;padding:10px;color:var(--text-primary);font-family:inherit';
+
+    // ========== NAVIGATION ==========
+    function goStep(step) {
+      saveFormData();
+      document.querySelectorAll('.phase').forEach(p => p.classList.remove('active'));
+      document.getElementById('phase-' + step).classList.add('active');
+      const items = document.querySelectorAll('.step-item');
+      const lines = document.querySelectorAll('.step-line');
+      items.forEach((item, i) => {
+        const s = i + 1;
+        item.classList.remove('active', 'completed');
+        if (s === step) item.classList.add('active');
+        else if (s < step) item.classList.add('completed');
+      });
+      lines.forEach((line, i) => {
+        line.classList.remove('completed');
+        if (i + 1 < step) line.classList.add('completed');
+      });
+      document.getElementById('stepper').style.display = step === 6 ? 'none' : 'flex';
+      // Show/hide spouse income card
+      const sic = document.getElementById('spouse-income-card');
+      if (sic) sic.style.display = hasSpouse ? '' : 'none';
+      window.scrollTo(0, 0);
+    }
+
+    // ========== SPOUSE ==========
+    function addSpouse() {
+      if (hasSpouse) return;
+      hasSpouse = true;
+      const sec = document.getElementById('spouse-section');
+      sec.innerHTML = `
+        <div class="child-row" id="spouse-row">
+          <input type="text" placeholder="お名前" id="spouse-name" style="${inputStyle}">
+          <input type="number" placeholder="年齢" id="spouse-age" value="33" min="0" max="100" style="width:80px;${inputStyle}">
+          <button class="btn-remove" onclick="removeSpouse()">×</button>
+        </div>`;
+      document.getElementById('btn-add-spouse').style.display = 'none';
+      const sic = document.getElementById('spouse-income-card');
+      if (sic) sic.style.display = '';
+    }
+
+    function removeSpouse() {
+      hasSpouse = false;
+      document.getElementById('spouse-section').innerHTML = '';
+      document.getElementById('btn-add-spouse').style.display = '';
+      const sic = document.getElementById('spouse-income-card');
+      if (sic) sic.style.display = 'none';
+    }
+
+    // ========== CHILDREN ==========
+    function addChild() {
+      childCounter++;
+      const div = document.createElement('div');
+      div.className = 'child-row';
+      div.id = 'child-' + childCounter;
+      div.innerHTML = `
+        <input type="text" placeholder="お名前" class="child-name" style="${inputStyle}">
+        <input type="number" placeholder="年齢" class="child-age" value="5" min="0" max="50" style="width:80px;${inputStyle}">
+        <button class="btn-remove" onclick="this.parentElement.remove()">×</button>`;
+      document.getElementById('children-list').appendChild(div);
+    }
+
+    // ========== EVENTS ==========
+    function addEvent() {
+      eventCounter++;
+      const div = document.createElement('div');
+      div.className = 'event-row';
+      div.id = 'event-' + eventCounter;
+      div.innerHTML = `
+        <select class="event-type" onchange="toggleCustomEvent(this)" style="${inputStyle}">
+          <option value="住宅購入">住宅購入</option>
+          <option value="車購入">車購入</option>
+          <option value="旅行">旅行</option>
+          <option value="リフォーム">リフォーム</option>
+          <option value="結婚">結婚</option>
+          <option value="その他">その他</option>
+        </select>
+        <input type="text" class="event-custom-name" placeholder="イベント名" style="display:none;${inputStyle}">
+        <input type="number" placeholder="年齢" class="event-age" value="40" style="width:80px;${inputStyle}">
+        <input type="number" placeholder="金額(万円)" class="event-cost" value="500" style="width:120px;${inputStyle}">
+        <button class="btn-remove" onclick="this.parentElement.remove()">×</button>`;
+      document.getElementById('events-list').appendChild(div);
+    }
+
+    function toggleCustomEvent(sel) {
+      const custom = sel.parentElement.querySelector('.event-custom-name');
+      custom.style.display = sel.value === 'その他' ? '' : 'none';
+    }
+
+    // ========== EXTRA INCOME ==========
+    function addExtraIncome() {
+      extraIncomeCounter++;
+      const div = document.createElement('div');
+      div.className = 'event-row';
+      div.id = 'extra-income-' + extraIncomeCounter;
+      div.innerHTML = `
+        <input type="text" placeholder="項目名" class="ei-name" style="${inputStyle}">
+        <input type="number" placeholder="年額(万円)" class="ei-amount" value="100" style="width:110px;${inputStyle}">
+        <input type="number" placeholder="開始年齢" class="ei-start" value="60" style="width:80px;${inputStyle}">
+        <input type="number" placeholder="終了年齢" class="ei-end" value="65" style="width:80px;${inputStyle}">
+        <button class="btn-remove" onclick="this.parentElement.remove()">×</button>`;
+      document.getElementById('extra-income-list').appendChild(div);
+    }
+
+    // ========== EXTRA EXPENSE ==========
+    function addExtraExpense() {
+      extraExpenseCounter++;
+      const div = document.createElement('div');
+      div.className = 'event-row';
+      div.id = 'extra-expense-' + extraExpenseCounter;
+      div.innerHTML = `
+        <input type="text" placeholder="項目名" class="ee-name" style="${inputStyle}">
+        <input type="number" placeholder="年額(万円)" class="ee-amount" value="30" style="width:110px;${inputStyle}">
+        <input type="number" placeholder="開始年齢" class="ee-start" value="35" style="width:80px;${inputStyle}">
+        <input type="number" placeholder="終了年齢(空欄=一度)" class="ee-end" style="width:80px;${inputStyle}">
+        <button class="btn-remove" onclick="this.parentElement.remove()">×</button>`;
+      document.getElementById('extra-expense-list').appendChild(div);
+    }
+
+    // ========== SAVE FORM DATA ==========
+    function saveFormData() {
+      const getVal = id => document.getElementById(id)?.value || '';
+      const getNum = id => parseFloat(document.getElementById(id)?.value) || 0;
+      const currentYear = new Date().getFullYear();
+      const clientAge = getNum('client-age');
+
+      clientData = {
+        name: getVal('client-name') || '（お名前未入力）',
+        age: clientAge,
+        birthYear: currentYear - clientAge,
+        gender: getVal('client-gender'),
+        hasSpouse: hasSpouse,
+        spouseName: hasSpouse ? (getVal('spouse-name') || '配偶者') : '',
+        spouseAge: hasSpouse ? getNum('spouse-age') : null,
+        spouseBirthYear: hasSpouse ? currentYear - getNum('spouse-age') : null,
+        children: [],
+        // Income
+        incomeMain: getNum('income-main'),
+        incomeMainStart: getNum('income-main-start') || clientAge,
+        incomeMainEnd: getNum('income-main-end') || 60,
+        incomeSpouse: hasSpouse ? getNum('income-spouse') : 0,
+        incomeSpouseStart: hasSpouse ? getNum('income-spouse-start') : 0,
+        incomeSpouseEnd: hasSpouse ? getNum('income-spouse-end') : 0,
+        retirementBonus: getNum('retirement-bonus'),
+        retirementAge: getNum('retirement-age') || 65,
+        extraIncomes: [],
+        // Expenses
+        expLiving: getNum('exp-living'),
+        expRent: getNum('exp-rent'),
+        expRentStart: getNum('exp-rent-start') || clientAge,
+        expRentEnd: getNum('exp-rent-end') || 100,
+        expInsurance: getNum('exp-insurance'),
+        expInsuranceEnd: getNum('exp-insurance-end') || 65,
+        extraExpenses: [],
+        // Assets
+        assetSavings: getNum('asset-savings'),
+        assetOther: getNum('asset-other'),
+        // Investment: Withdrawal fund (bonds/balanced)
+        assetInvestWithdraw: getNum('asset-invest-withdraw'),
+        investAnnualWithdrawal: getNum('invest-annual-withdrawal'),
+        investWithdrawRate: getNum('invest-withdraw-rate') / 100,
+        // Investment: Growth fund (equity)
+        assetInvestGrowth: getNum('asset-invest-growth'),
+        investGrowthRate: getNum('invest-growth-rate') / 100,
+        // Debts
+        debtHousing: getNum('debt-housing'),
+        debtHousingAnnual: getNum('debt-housing-annual'),
+        debtHousingYears: getNum('debt-housing-years'),
+        debtOther: getNum('debt-other'),
+        events: []
+      };
+
+      // Children
+      document.querySelectorAll('.child-row').forEach(row => {
+        if (row.id === 'spouse-row') return;
+        const name = row.querySelector('.child-name')?.value || '';
+        const age = parseInt(row.querySelector('.child-age')?.value) || 0;
+        clientData.children.push({ name: name || 'お子様', age: age, birthYear: currentYear - age });
+      });
+
+      // Events
+      document.querySelectorAll('.event-row').forEach(row => {
+        if (row.id.startsWith('extra-income') || row.id.startsWith('extra-expense')) return;
+        const typeEl = row.querySelector('.event-type');
+        if (!typeEl) return;
+        let type = typeEl.value;
+        if (type === 'その他') {
+          const custom = row.querySelector('.event-custom-name')?.value;
+          if (custom) type = custom;
+        }
+        const age = parseInt(row.querySelector('.event-age')?.value) || 0;
+        const cost = parseFloat(row.querySelector('.event-cost')?.value) || 0;
+        if (age > 0) clientData.events.push({ type, age, cost });
+      });
+
+      // Extra incomes
+      document.querySelectorAll('[id^="extra-income-"]').forEach(row => {
+        const name = row.querySelector('.ei-name')?.value || 'その他収入';
+        const amount = parseFloat(row.querySelector('.ei-amount')?.value) || 0;
+        const start = parseInt(row.querySelector('.ei-start')?.value) || 0;
+        const end = parseInt(row.querySelector('.ei-end')?.value) || start;
+        if (amount > 0) clientData.extraIncomes.push({ name, amount, start, end });
+      });
+
+      // Extra expenses
+      document.querySelectorAll('[id^="extra-expense-"]').forEach(row => {
+        const name = row.querySelector('.ee-name')?.value || 'その他支出';
+        const amount = parseFloat(row.querySelector('.ee-amount')?.value) || 0;
+        const start = parseInt(row.querySelector('.ee-start')?.value) || 0;
+        const endVal = row.querySelector('.ee-end')?.value;
+        const end = endVal ? parseInt(endVal) : start; // empty = one-time
+        if (amount > 0) clientData.extraExpenses.push({ name, amount, start, end });
+      });
+    }
+
+    // ========== EDUCATION COST TABLE ==========
+    function getEducationCost(childAge, plan) {
+      const costs = {
+        public: { 7: 30, 13: 45, 16: 50, 19: 80 },
+        private: { 7: 100, 13: 120, 16: 100, 19: 150 }
+      };
+      const c = costs[plan] || costs.public;
+      if (childAge >= 19 && childAge <= 22) return c[19];
+      if (childAge >= 16 && childAge <= 18) return c[16];
+      if (childAge >= 13 && childAge <= 15) return c[13];
+      if (childAge >= 7 && childAge <= 12) return c[7];
+      if (childAge >= 3 && childAge <= 6) return 25;
+      return 0;
+    }
+
+    // ========== CALCULATE PLAN ==========
+    function calculatePlan() {
+      const p = {
+        salaryGrowth: parseFloat(document.getElementById('p-salary').value) / 100,
+        inflation: parseFloat(document.getElementById('p-inflation').value) / 100,
+        investReturn: parseFloat(document.getElementById('p-return').value) / 100,
+        retireAge: parseInt(document.getElementById('p-retire').value),
+        pensionMonthly: parseFloat(document.getElementById('p-pension').value),
+        pensionStartAge: parseInt(document.getElementById('p-pension-age').value),
+        housingAdj: parseInt(document.getElementById('p-housing').value) / 100,
+        eduPlan: document.getElementById('p-edu').value
+      };
+
+      const currentYear = new Date().getFullYear();
+      const simYears = 50;
+      const startAge = clientData.age;
+      planData = [];
+
+      let cashBalance = clientData.assetSavings + clientData.assetOther - clientData.debtOther;
+      let withdrawBalance = clientData.assetInvestWithdraw;
+      let growthBalance = clientData.assetInvestGrowth;
+      const withdrawRate = parseFloat(document.getElementById('p-withdraw-rate').value) / 100;
+      const withdrawAmount = parseFloat(document.getElementById('p-withdraw-amount').value);
+      const growthRate = parseFloat(document.getElementById('p-growth-rate').value) / 100;
+      let mainIncome = clientData.incomeMain;
+      let spouseIncome = clientData.incomeSpouse;
+
+      for (let i = 0; i < simYears; i++) {
+        const year = currentYear + i;
+        const age = startAge + i;
+        const spouseAge = clientData.spouseAge != null ? clientData.spouseAge + i : null;
+
+        if (age > 100) break;
+
+        // Events
+        const yearEvents = clientData.events.filter(e => e.age === age);
+        const eventCost = yearEvents.reduce((sum, e) => sum + e.cost, 0);
+        const eventLabels = yearEvents.map(e => e.type).join(', ');
+
+        // Children ages
+        const childAges = clientData.children.map(c => ({ name: c.name, age: c.age + i }));
+
+        // === INCOME ===
+        const inMainPeriod = age >= clientData.incomeMainStart && age <= clientData.incomeMainEnd;
+        let salary = inMainPeriod ? mainIncome : 0;
+
+        const inSpPeriod = clientData.hasSpouse && spouseAge != null &&
+          age >= clientData.incomeSpouseStart && age <= clientData.incomeSpouseEnd;
+        let spSalary = inSpPeriod ? spouseIncome : 0;
+
+        let pension = age >= p.pensionStartAge ? p.pensionMonthly * 12 : 0;
+        let bonus = age === clientData.retirementAge ? clientData.retirementBonus : 0;
+
+        // Extra incomes
+        let extraIncomeTotal = 0;
+        let extraIncomeDetails = {};
+        clientData.extraIncomes.forEach(ei => {
+          if (age >= ei.start && age <= ei.end) {
+            extraIncomeTotal += ei.amount;
+            extraIncomeDetails[ei.name] = (extraIncomeDetails[ei.name] || 0) + ei.amount;
+          }
+        });
+
+        // Investment withdrawal from withdraw fund (cannot exceed current balance)
+        let investWithdrawal = Math.min(withdrawAmount, Math.max(withdrawBalance, 0));
+
+        let totalIncome = salary + spSalary + pension + bonus + extraIncomeTotal + investWithdrawal;
+
+        // === EXPENSES ===
+        const inflationFactor = Math.pow(1 + p.inflation, i);
+
+        let living = clientData.expLiving * inflationFactor;
+        // After retirement age, reduce living by 20%
+        if (age >= p.retireAge) living *= 0.8;
+
+        // Rent (only within period)
+        const inRentPeriod = age >= clientData.expRentStart && age <= clientData.expRentEnd;
+        let rent = inRentPeriod ? clientData.expRent * (1 + p.housingAdj) * inflationFactor : 0;
+
+        // Housing loan (from assets section, separate from rent)
+        let loanPayment = 0;
+        if (clientData.debtHousingAnnual > 0 && clientData.debtHousingYears > 0 && i < clientData.debtHousingYears) {
+          loanPayment = clientData.debtHousingAnnual;
+        }
+
+        // Insurance (within period)
+        let insurance = age <= clientData.expInsuranceEnd ? clientData.expInsurance * inflationFactor : 0;
+
+        // Education
+        let education = 0;
+        childAges.forEach(c => { education += getEducationCost(c.age, p.eduPlan); });
+
+        // Extra expenses
+        let extraExpenseTotal = 0;
+        let extraExpenseDetails = {};
+        clientData.extraExpenses.forEach(ee => {
+          if (age >= ee.start && age <= ee.end) {
+            extraExpenseTotal += ee.amount;
+            extraExpenseDetails[ee.name] = (extraExpenseDetails[ee.name] || 0) + ee.amount;
+          }
+        });
+
+        let totalExpense = living + rent + loanPayment + insurance + education + extraExpenseTotal + eventCost;
+
+        // Balance
+        let netIncome = totalIncome - totalExpense;
+
+        // Withdraw fund: deduct withdrawal, then apply compound rate
+        withdrawBalance -= investWithdrawal;
+        let withdrawGain = withdrawBalance > 0 ? withdrawBalance * withdrawRate : 0;
+        withdrawBalance += withdrawGain;
+
+        // Growth fund: no withdrawal, just compound
+        let growthGain = growthBalance > 0 ? growthBalance * growthRate : 0;
+        growthBalance += growthGain;
+
+        // Cash balance: net income + investment return on cash portion
+        let investGain = cashBalance > 0 ? cashBalance * p.investReturn : 0;
+        cashBalance = cashBalance + netIncome + investGain;
+
+        let balance = cashBalance + withdrawBalance + growthBalance;
+
+        planData.push({
+          year, age, spouseAge,
+          childAges: childAges.map(c => ({ ...c })),
+          events: eventLabels,
+          salary: Math.round(salary),
+          spSalary: Math.round(spSalary),
+          pension: Math.round(pension),
+          bonus: Math.round(bonus),
+          investWithdrawal: Math.round(investWithdrawal),
+          extraIncomeTotal: Math.round(extraIncomeTotal),
+          extraIncomeDetails,
+          totalIncome: Math.round(totalIncome),
+          living: Math.round(living),
+          rent: Math.round(rent),
+          loanPayment: Math.round(loanPayment),
+          insurance: Math.round(insurance),
+          education: Math.round(education),
+          extraExpenseTotal: Math.round(extraExpenseTotal),
+          extraExpenseDetails,
+          eventCost: Math.round(eventCost),
+          totalExpense: Math.round(totalExpense),
+          netIncome: Math.round(netIncome),
+          investGain: Math.round(investGain),
+          withdrawGain: Math.round(withdrawGain),
+          withdrawBalance: Math.round(withdrawBalance),
+          growthGain: Math.round(growthGain),
+          growthBalance: Math.round(growthBalance),
+          balance: Math.round(balance)
+        });
+
+        // Grow incomes for next year
+        if (inMainPeriod) mainIncome *= (1 + p.salaryGrowth);
+        if (inSpPeriod) spouseIncome *= (1 + p.salaryGrowth);
+      }
+    }
+
+    // ========== RENDER TABLE ==========
+    function renderTable(tableId) {
+      const table = document.getElementById(tableId);
+      if (!planData.length) return;
+
+      let html = '<thead><tr><th>項目</th>';
+      planData.forEach(d => { html += `<th>${d.year}<br>(${d.age}歳)</th>`; });
+      html += '</tr></thead><tbody>';
+
+      // Age rows
+      if (clientData.hasSpouse) {
+        html += '<tr><td>配偶者年齢</td>';
+        planData.forEach(d => { html += `<td>${d.spouseAge || '-'}</td>`; });
+        html += '</tr>';
+      }
+      clientData.children.forEach((child, ci) => {
+        html += `<tr><td>${child.name}年齢</td>`;
+        planData.forEach(d => {
+          const ca = d.childAges[ci];
+          html += `<td>${ca ? ca.age : '-'}</td>`;
+        });
+        html += '</tr>';
+      });
+
+      // Events
+      html += '<tr><td>ライフイベント</td>';
+      planData.forEach(d => { html += `<td class="event-cell">${d.events || ''}</td>`; });
+      html += '</tr>';
+
+      // Income section
+      html += `<tr class="section-header"><td>【収入】</td>${planData.map(() => '<td></td>').join('')}</tr>`;
+      html += buildRow('給与収入', planData.map(d => d.salary));
+      if (clientData.hasSpouse) html += buildRow('配偶者収入', planData.map(d => d.spSalary));
+      html += buildRow('年金', planData.map(d => d.pension));
+      html += buildRow('退職金', planData.map(d => d.bonus));
+      html += buildRow('受取用 受取額', planData.map(d => d.investWithdrawal));
+
+      // Extra income rows
+      const eiNames = new Set();
+      clientData.extraIncomes.forEach(ei => eiNames.add(ei.name));
+      eiNames.forEach(name => {
+        html += buildRow(name, planData.map(d => d.extraIncomeDetails[name] || 0));
+      });
+
+      html += buildRow('収入合計', planData.map(d => d.totalIncome), true);
+
+      // Expense section
+      html += `<tr class="section-header"><td>【支出】</td>${planData.map(() => '<td></td>').join('')}</tr>`;
+      html += buildRow('基本生活費', planData.map(d => d.living));
+      html += buildRow('家賃', planData.map(d => d.rent));
+      html += buildRow('ローン返済', planData.map(d => d.loanPayment));
+      html += buildRow('保険料', planData.map(d => d.insurance));
+      html += buildRow('教育費', planData.map(d => d.education));
+
+      // Extra expense rows
+      const eeNames = new Set();
+      clientData.extraExpenses.forEach(ee => eeNames.add(ee.name));
+      eeNames.forEach(name => {
+        html += buildRow(name, planData.map(d => d.extraExpenseDetails[name] || 0));
+      });
+
+      html += buildRow('イベント支出', planData.map(d => d.eventCost));
+      html += buildRow('支出合計', planData.map(d => d.totalExpense), true);
+
+      // Summary
+      html += `<tr class="section-header"><td>【収支・資産】</td>${planData.map(() => '<td></td>').join('')}</tr>`;
+      html += buildRow('年間収支', planData.map(d => d.netIncome), false, true);
+      html += buildRow('運用益（預貯金）', planData.map(d => d.investGain));
+      html += buildRow('受取用 運用益', planData.map(d => d.withdrawGain));
+      html += buildRow('受取用 残高', planData.map(d => d.withdrawBalance));
+      html += buildRow('増加用 運用益', planData.map(d => d.growthGain));
+      html += buildRow('増加用 残高', planData.map(d => d.growthBalance));
+      html += buildRow('金融資産残高', planData.map(d => d.balance), false, true, true);
+
+      html += '</tbody>';
+      table.innerHTML = html;
+    }
+
+    function buildRow(label, values, isTotal, colorize, isBalance) {
+      let cls = isTotal ? ' class="total-row"' : (isBalance ? ' class="balance-row"' : '');
+      let html = `<tr${cls}><td>${label}</td>`;
+      values.forEach(v => {
+        let cellCls = '';
+        if (colorize || isBalance) {
+          cellCls = v < 0 ? ' class="negative"' : (isBalance && v > 0 ? ' class="positive"' : '');
+        }
+        html += `<td${cellCls}>${formatNum(v)}</td>`;
+      });
+      html += '</tr>';
+      return html;
+    }
+
+    function formatNum(n) {
+      if (n === 0) return '-';
+      return n.toLocaleString('ja-JP');
+    }
+
+    // ========== CHART ==========
+    function renderChart(canvasId) {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext('2d');
+      const isPdf = canvasId === 'pdf-chart';
+
+      const labels = planData.map(d => d.year);
+      const data = planData.map(d => d.balance);
+
+      const config = {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: '金融資産残高（万円）',
+            data,
+            backgroundColor: data.map(v => v >= 0
+              ? (isPdf ? 'rgba(79,70,229,0.7)' : 'rgba(99,102,241,0.6)')
+              : (isPdf ? 'rgba(220,38,38,0.7)' : 'rgba(239,68,68,0.6)')),
+            borderColor: data.map(v => v >= 0
+              ? (isPdf ? '#4f46e5' : '#818cf8')
+              : (isPdf ? '#dc2626' : '#f87171')),
+            borderWidth: 1,
+            borderRadius: 2,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: isPdf,
+          animation: isPdf ? false : { duration: 800 },
+          plugins: {
+            legend: {
+              labels: { color: isPdf ? '#333' : '#9ca3af', font: { size: isPdf ? 10 : 12 } }
+            },
+            tooltip: {
+              callbacks: {
+                label: ctx => `${ctx.parsed.y.toLocaleString('ja-JP')}万円`
+              }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: isPdf ? '#666' : '#6b7280', font: { size: isPdf ? 8 : 10 }, maxRotation: 45 },
+              grid: { color: isPdf ? '#e5e7eb' : 'rgba(255,255,255,0.05)' }
+            },
+            y: {
+              ticks: {
+                color: isPdf ? '#666' : '#6b7280',
+                callback: v => v.toLocaleString('ja-JP'),
+              },
+              grid: { color: isPdf ? '#e5e7eb' : 'rgba(255,255,255,0.05)' }
+            }
+          }
+        }
+      };
+
+      if (canvasId === 'asset-chart') {
+        if (chartInstance) chartInstance.destroy();
+        chartInstance = new Chart(ctx, config);
+      } else {
+        new Chart(ctx, config);
+      }
+    }
+
+    // ========== GENERATE PLAN ==========
+    function generatePlan() {
+      saveFormData();
+      // Sync sidebar sliders and number inputs from form data
+      const syncPair = (id, val) => {
+        const r = document.getElementById('p-' + id);
+        const n = document.getElementById('pn-' + id);
+        if (r) r.value = val;
+        if (n) n.value = val;
+      };
+      syncPair('withdraw-rate', clientData.investWithdrawRate * 100);
+      syncPair('withdraw-amount', clientData.investAnnualWithdrawal);
+      syncPair('growth-rate', clientData.investGrowthRate * 100);
+      goStep(6);
+      updateParam();
+    }
+
+    // ========== SYNC PARAM (slider <-> number input) ==========
+    function setParam(id, val) {
+      const r = document.getElementById('p-' + id);
+      const n = document.getElementById('pn-' + id);
+      if (r) r.value = val;
+      if (n) n.value = val;
+      updateParam();
+    }
+
+    // ========== UPDATE PARAMS ==========
+    function updateParam() {
+      document.getElementById('pv-edu').textContent = document.getElementById('p-edu').value === 'public' ? '公立中心' : '私立中心';
+      calculatePlan();
+      renderTable('lifeplan-table');
+      renderChart('asset-chart');
+    }
+
+    // ========== PDF EXPORT ==========
+    function exportPDF() {
+      const target = document.getElementById('pdf-target');
+      target.style.display = 'block';
+
+      document.getElementById('pdf-client-info').textContent =
+        `${clientData.name} 様（${clientData.age}歳）` +
+        (clientData.hasSpouse ? ` / 配偶者：${clientData.spouseName}` : '');
+      const now = new Date();
+      document.getElementById('pdf-date').textContent =
+        `作成日：${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
+
+      renderTable('pdf-table');
+      renderChart('pdf-chart');
+
+      setTimeout(() => {
+        const opt = {
+          margin: 5,
+          filename: `ライフプラン_${clientData.name}.pdf`,
+          image: { type: 'jpeg', quality: 0.95 },
+          html2canvas: { scale: 2, useCORS: true, scrollX: 0, scrollY: 0 },
+          jsPDF: { unit: 'mm', format: 'a3', orientation: 'landscape' }
+        };
+        html2pdf().set(opt).from(target).save().then(() => {
+          target.style.display = 'none';
+        });
+      }, 500);
+    }
+
+    // ========== INIT ==========
+    window.addEventListener('DOMContentLoaded', () => {
+      addEvent(); // Start with one event
+    });
+  </script>
+</body>
+
+</html>
