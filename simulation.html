@@ -12,24 +12,24 @@
         rel="stylesheet">
     <style>
         :root {
-            --bg-primary: #0f1117;
-            --bg-secondary: #1a1d2e;
-            --bg-card: rgba(26, 29, 46, 0.8);
-            --bg-glass: rgba(255, 255, 255, 0.05);
-            --border-glass: rgba(255, 255, 255, 0.1);
-            --text-primary: #e8eaf0;
-            --text-secondary: #9ca3af;
-            --text-muted: #6b7280;
+            --bg-primary: #f8fafc;
+            --bg-secondary: #f1f5f9;
+            --bg-card: rgba(255, 255, 255, 0.95);
+            --bg-glass: rgba(99, 102, 241, 0.04);
+            --border-glass: rgba(0, 0, 0, 0.1);
+            --text-primary: #1f2937;
+            --text-secondary: #4b5563;
+            --text-muted: #9ca3af;
             --accent: #6366f1;
-            --accent-light: #818cf8;
-            --accent-glow: rgba(99, 102, 241, 0.3);
-            --success: #22c55e;
-            --warning: #f59e0b;
-            --danger: #ef4444;
+            --accent-light: #4f46e5;
+            --accent-glow: rgba(99, 102, 241, 0.2);
+            --success: #16a34a;
+            --warning: #d97706;
+            --danger: #dc2626;
             --gradient-1: linear-gradient(135deg, #6366f1, #8b5cf6);
-            --gradient-2: linear-gradient(135deg, #0f1117 0%, #1a1d2e 100%);
+            --gradient-2: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
             --radius: 12px;
-            --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
         }
 
         * {
@@ -53,9 +53,9 @@
             left: -50%;
             width: 200%;
             height: 200%;
-            background: radial-gradient(circle at 20% 40%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 60%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
-                radial-gradient(circle at 50% 20%, rgba(34, 197, 94, 0.05) 0%, transparent 50%);
+            background: radial-gradient(circle at 20% 40%, rgba(99, 102, 241, 0.06) 0%, transparent 50%),
+                radial-gradient(circle at 80% 60%, rgba(139, 92, 246, 0.04) 0%, transparent 50%),
+                radial-gradient(circle at 50% 20%, rgba(34, 197, 94, 0.03) 0%, transparent 50%);
             z-index: 0;
             pointer-events: none;
         }
@@ -126,7 +126,7 @@
         }
 
         .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.05);
         }
 
         .btn-home {
@@ -242,7 +242,7 @@
             height: 6px;
             appearance: none;
             -webkit-appearance: none;
-            background: linear-gradient(90deg, rgba(99, 102, 241, 0.3), rgba(139, 92, 246, 0.3));
+            background: linear-gradient(90deg, rgba(99, 102, 241, 0.25), rgba(139, 92, 246, 0.25));
             border-radius: 3px;
             outline: none;
             transition: background 0.2s;
@@ -275,7 +275,7 @@
 
         .param-num-input {
             width: 68px;
-            background: rgba(255, 255, 255, 0.04);
+            background: rgba(0, 0, 0, 0.03);
             border: 1px solid var(--border-glass);
             border-radius: 6px;
             padding: 3px 7px;
@@ -295,7 +295,7 @@
 
         .number-input {
             width: 100%;
-            background: rgba(255, 255, 255, 0.04);
+            background: rgba(0, 0, 0, 0.03);
             border: 1px solid var(--border-glass);
             border-radius: 8px;
             padding: 10px 14px;
@@ -378,7 +378,7 @@
         .stat-card:hover {
             transform: translateY(-2px);
             border-color: rgba(99, 102, 241, 0.3);
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
         }
 
         .stat-label {
@@ -775,7 +775,7 @@
                         legend: {
                             position: 'top',
                             labels: {
-                                color: '#9ca3af',
+                                color: '#4b5563',
                                 font: { size: 11, family: "'Noto Sans JP', sans-serif" },
                                 usePointStyle: true,
                                 pointStyle: 'line',
@@ -783,9 +783,9 @@
                             }
                         },
                         tooltip: {
-                            backgroundColor: 'rgba(15,17,23,0.95)',
-                            titleColor: '#e8eaf0',
-                            bodyColor: '#9ca3af',
+                            backgroundColor: 'rgba(255,255,255,0.98)',
+                            titleColor: '#1f2937',
+                            bodyColor: '#4b5563',
                             borderColor: 'rgba(99,102,241,0.3)',
                             borderWidth: 1,
                             padding: 12,
@@ -800,7 +800,7 @@
                     scales: {
                         x: {
                             ticks: {
-                                color: '#6b7280',
+                                color: '#9ca3af',
                                 font: { size: 10 },
                                 maxRotation: 0,
                                 callback: function (value, index) {
@@ -812,15 +812,15 @@
                                     return index % 10 === 0 ? this.getLabelForValue(value) : '';
                                 }
                             },
-                            grid: { color: 'rgba(255,255,255,0.04)' }
+                            grid: { color: 'rgba(0,0,0,0.06)' }
                         },
                         y: {
                             ticks: {
-                                color: '#6b7280',
+                                color: '#9ca3af',
                                 font: { size: 10 },
                                 callback: v => formatJPY(v) + '万円'
                             },
-                            grid: { color: 'rgba(255,255,255,0.06)' }
+                            grid: { color: 'rgba(0,0,0,0.08)' }
                         }
                     }
                 }
