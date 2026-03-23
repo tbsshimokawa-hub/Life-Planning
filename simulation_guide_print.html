@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>リスク・リターン シミュレーション 解説ガイド | Money Advice Center</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Serif+JP:wght@400;700&display=swap');
+
+        :root {
+            --accent: #4f46e5;
+            --accent-light: #818cf8;
+            --bg-light: #f8f9ff;
+            --border: #e0e0f0;
+            --text: #1e1e2e;
+            --sub: #555577;
+            --success: #16a34a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background: white;
+            color: var(--text);
+            font-size: 11pt;
+            line-height: 1.8;
+            padding: 0;
+        }
+
+        /* Cover / Header */
+        .cover {
+            background: linear-gradient(135deg, #3730a3 0%, #6d28d9 60%, #7c3aed 100%);
+            color: white;
+            padding: 52px 56px 44px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cover::before {
+            content: '';
+            position: absolute;
+            top: -60px;
+            right: -60px;
+            width: 280px;
+            height: 280px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.07);
+        }
+
+        .cover::after {
+            content: '';
+            position: absolute;
+            bottom: -40px;
+            left: 30px;
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .cover .badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            padding: 4px 14px;
+            font-size: 9pt;
+            letter-spacing: 0.05em;
+            margin-bottom: 18px;
+        }
+
+        .cover h1 {
+            font-family: 'Noto Serif JP', serif;
+            font-size: 22pt;
+            font-weight: 700;
+            line-height: 1.4;
+            margin-bottom: 12px;
+        }
+
+        .cover .subtitle {
+            font-size: 11pt;
+            opacity: 0.8;
+            margin-bottom: 32px;
+        }
+
+        .cover .meta {
+            font-size: 9pt;
+            opacity: 0.65;
+            margin-top: 8px;
+        }
+
+        /* Body content */
+        .content {
+            max-width: 740px;
+            margin: 0 auto;
+            padding: 40px 56px 60px;
+        }
+
+        /* Section */
+        .section {
+            margin-bottom: 40px;
+            page-break-inside: avoid;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--accent);
+        }
+
+        .section-num {
+            background: var(--accent);
+            color: white;
+            font-size: 11pt;
+            font-weight: 700;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .section-header h2 {
+            font-size: 14pt;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .answer-box {
+            background: var(--bg-light);
+            border-left: 4px solid var(--accent);
+            border-radius: 0 8px 8px 0;
+            padding: 12px 18px;
+            margin-bottom: 20px;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        h3 {
+            font-size: 11pt;
+            font-weight: 700;
+            color: var(--sub);
+            margin: 20px 0 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            font-size: 9.5pt;
+        }
+
+        p {
+            margin-bottom: 10px;
+            color: var(--text);
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 14px 0 20px;
+            font-size: 10pt;
+        }
+
+        th {
+            background: var(--accent);
+            color: white;
+            padding: 8px 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 9.5pt;
+        }
+
+        td {
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        tr:nth-child(even) td {
+            background: #f5f5ff;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        strong {
+            color: var(--accent);
+        }
+
+        /* Code / Formula */
+        .formula {
+            background: #1e1e2e;
+            color: #c8c8ff;
+            border-radius: 8px;
+            padding: 14px 18px;
+            font-family: 'Courier New', monospace;
+            font-size: 10pt;
+            margin: 14px 0;
+            line-height: 1.6;
+        }
+
+        /* Callout */
+        .callout {
+            background: #fffbeb;
+            border: 1px solid #fbbf24;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin: 16px 0;
+            font-size: 10pt;
+            line-height: 1.7;
+        }
+
+        .callout strong {
+            color: #92400e;
+        }
+
+        .callout-title {
+            font-weight: 700;
+            color: #92400e;
+            margin-bottom: 4px;
+            font-size: 9.5pt;
+        }
+
+        /* Summary table at end */
+        .summary-card {
+            background: linear-gradient(135deg, #f0f0ff, #f8f8ff);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-top: 40px;
+        }
+
+        .summary-card h2 {
+            font-size: 13pt;
+            color: var(--accent);
+            margin-bottom: 16px;
+            font-weight: 700;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            font-size: 8.5pt;
+            color: #aaa;
+            padding: 20px 56px;
+            border-top: 1px solid var(--border);
+            margin-top: 20px;
+        }
+
+        /* List items */
+        ul {
+            padding-left: 20px;
+            margin: 8px 0 14px;
+        }
+
+        ul li {
+            margin-bottom: 5px;
+        }
+
+        @media print {
+            body {
+                font-size: 10.5pt;
+            }
+
+            .cover {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            th {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .section {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Cover -->
+    <div class="cover">
+        <div class="badge">📊 Money Advice Center — 内部資料</div>
+        <h1>リスク・リターン シミュレーション<br>解説ガイド</h1>
+        <div class="subtitle">モデルの仕組みと各パラメーターの意味について</div>
+        <div class="meta">作成日：2026年2月27日 ／ バージョン 1.0</div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+
+        <!-- Section 1 -->
+        <div class="section">
+            <div class="section-header">
+                <div class="section-num">1</div>
+                <h2>複利（連続複利）で計算されているか</h2>
+            </div>
+
+            <div class="answer-box">✅ はい、複利（連続複利）で計算されています。</div>
+
+            <p>このシミュレーションは「<strong>対数正規分布モデル</strong>」を採用しており、数学的には連続複利を表す指数関数を使っています。</p>
+
+            <div class="formula">最終資産 = 初期投資 × e^(ドリフト × 年数)</div>
+
+            <h3>方式別の比較（年率5%・30年・1,000万円の場合）</h3>
+
+            <table>
+                <tr>
+                    <th>計算方式</th>
+                    <th>計算式</th>
+                    <th>30年後の結果</th>
+                </tr>
+                <tr>
+                    <td>単利</td>
+                    <td>1,000万 × (1 + 0.05×30)</td>
+                    <td>2,500万円</td>
+                </tr>
+                <tr>
+                    <td>年複利（1年1回）</td>
+                    <td>1,000万 × 1.05³⁰</td>
+                    <td>約 4,322万円</td>
+                </tr>
+                <tr>
+                    <td><strong>連続複利（本シミュレーション）</strong></td>
+                    <td>1,000万 × e^(0.05×30)</td>
+                    <td><strong>約 4,482万円</strong></td>
+                </tr>
+            </table>
+
+            <p>長期の資産運用シミュレーションでは連続複利が理論的に正確であり、業界標準として広く使われています。</p>
+        </div>
+
+        <!-- Section 2 -->
+        <div class="section">
+            <div class="section-header">
+                <div class="section-num">2</div>
+                <h2>中央値がリターンだけの場合より小さく見える理由</h2>
+            </div>
+
+            <div class="answer-box">✅ はい、リスク（標準偏差）の分だけ中央値は低くなります。<br>これは「<strong>分散ドラッグ（Variance
+                    Drag）</strong>」と呼ばれる重要な概念です。</div>
+
+            <h3>計算式の比較</h3>
+
+            <table>
+                <tr>
+                    <th>シナリオ</th>
+                    <th>中央値の計算式</th>
+                </tr>
+                <tr>
+                    <td>リスクなし（純リターン）</td>
+                    <td>P₀ × exp(μ × t)</td>
+                </tr>
+                <tr>
+                    <td><strong>リスクあり（本シミュレーション）</strong></td>
+                    <td><strong>P₀ × exp((μ − σ²/2) × t)</strong></td>
+                </tr>
+            </table>
+
+            <p>差は <strong>σ²/2</strong>（分散の半分）＝ ボラティリティによる目減り（分散ドラッグ）</p>
+
+            <h3>具体例：リターン5%・リスク15%・30年・1,000万円スタート</h3>
+
+            <table>
+                <tr>
+                    <th></th>
+                    <th>計算</th>
+                    <th>30年後の資産</th>
+                </tr>
+                <tr>
+                    <td>リスクなし中央値</td>
+                    <td>exp(0.05 × 30)</td>
+                    <td>4,482万円（4.48倍）</td>
+                </tr>
+                <tr>
+                    <td><strong>リスクあり中央値</strong></td>
+                    <td>exp((0.05 − 0.01125) × 30)</td>
+                    <td><strong>3,179万円（3.18倍）</strong></td>
+                </tr>
+                <tr>
+                    <td>差（分散ドラッグ）</td>
+                    <td>σ²/2 = 1.125%/年</td>
+                    <td>約 1,300万円の差</td>
+                </tr>
+            </table>
+
+            <h3>なぜ中央値が下がるのか</h3>
+
+            <p>リターンのブレ（リスク）が大きいと：</p>
+            <ul>
+                <li>上振れは<strong>青天井</strong>（理論的に無限大）</li>
+                <li>下振れは<strong>元本までが限界</strong>（ゼロ以下にはならない）</li>
+            </ul>
+            <p>このため分布が右に歪み（右裾が長い）、<strong>平均（期待値）は引き上げられますが中央値（50パーセンタイル）は下がります</strong>。</p>
+
+            <div class="callout">
+                <div class="callout-title">⚠️ 実務的な意味</div>
+                リスクが高い商品ほど「平均的には儲かる」一方、<strong>半数以上の投資家は期待値より低いリターンしか得られない</strong>という事実を示しています。長期投資においてリスク管理が重要な理由の一つです。
+            </div>
+        </div>
+
+        <!-- Section 3 -->
+        <div class="section">
+            <div class="section-header">
+                <div class="section-num">3</div>
+                <h2>平均回帰（κ：カッパ）パラメーターについて</h2>
+            </div>
+
+            <div class="answer-box">株式市場が長期的に一定の水準に引き戻される傾向を表す係数です。</div>
+
+            <h3>モデルの概要（Ornstein-Uhlenbeck モデル）</h3>
+
+            <p>通常のモデル（κ=0）では、リスク（標準偏差）は時間の経過とともに <code>σ√t</code>
+                で無限に拡大します。しかし現実の株式市場では、PER・景気サイクル・各国の金融政策などにより、<strong>極端な水準からの回帰</strong>が観察されます。この現象をモデル化したのが平均回帰パラメーター
+                κ です。</p>
+
+            <div class="formula">有効ボラティリティ σ_eff(t) = σ × √( (1 − e^(−2κt)) / (2κ) )
+
+                κ = 0 のとき: σ_eff = σ√t（無限拡大）
+                κ > 0 のとき: 長期で σ/√(2κ) に収束（回帰あり）</div>
+
+            <h3>κ の値と意味</h3>
+
+            <table>
+                <tr>
+                    <th>κ の値</th>
+                    <th>意味</th>
+                    <th>長期の帯域への影響</th>
+                </tr>
+                <tr>
+                    <td><strong>0（ゼロ）</strong></td>
+                    <td>回帰なし・純粋ランダムウォーク</td>
+                    <td>年数に応じて無限に拡大</td>
+                </tr>
+                <tr>
+                    <td>0.05〜0.10</td>
+                    <td>弱い回帰（実証研究に近い値）</td>
+                    <td>じわじわ収束</td>
+                </tr>
+                <tr>
+                    <td><strong>0.15（デフォルト）</strong></td>
+                    <td>中程度の回帰</td>
+                    <td>バランスの良い表現</td>
+                </tr>
+                <tr>
+                    <td>0.30〜0.50</td>
+                    <td>強い回帰</td>
+                    <td>帯域が早期に収束・狭くなる</td>
+                </tr>
+            </table>
+
+            <h3>推奨設定</h3>
+
+            <table>
+                <tr>
+                    <th>用途</th>
+                    <th>κ 推奨値</th>
+                </tr>
+                <tr>
+                    <td>保守的な確認（最大リスク想定・最悪ケースの提示）</td>
+                    <td><strong>0（回帰なし）</strong></td>
+                </tr>
+                <tr>
+                    <td>世界株式の標準的な長期シミュレーション</td>
+                    <td><strong>0.10〜0.20</strong></td>
+                </tr>
+                <tr>
+                    <td>平均回帰の安心感を強調して見せたい場合</td>
+                    <td><strong>0.25〜0.40</strong></td>
+                </tr>
+            </table>
+
+            <div class="callout">
+                <div class="callout-title">⚠️ 注意点</div>
+                κ を大きくするほど不確実性の帯域が狭くなり「安心感」が増しますが、過度に楽観的な印象を与えるリスクがあります。<br>
+                <strong>クライアントへの説明用には 0.10〜0.15 程度が現実的かつ誠実な設定</strong>です。
+            </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="summary-card">
+            <h2>📋 まとめ</h2>
+            <table>
+                <tr>
+                    <th>確認項目</th>
+                    <th>答え</th>
+                </tr>
+                <tr>
+                    <td>複利計算か？</td>
+                    <td>✅ 連続複利（対数正規分布モデル）</td>
+                </tr>
+                <tr>
+                    <td>なぜ中央値が純リターンより低いか？</td>
+                    <td>✅ 分散ドラッグ（σ²/2 の控除）</td>
+                </tr>
+                <tr>
+                    <td>κ=0 はどんな意味か？</td>
+                    <td>従来の独立ランダムウォーク（最もリスクが大きく見える）</td>
+                </tr>
+                <tr>
+                    <td>κ を大きくすると？</td>
+                    <td>帯域が収束し、不確実性が小さく表示される</td>
+                </tr>
+            </table>
+        </div>
+
+    </div>
+
+    <div class="footer">
+        本資料は Money Advice Center 内部資料です。シミュレーションは統計的推計であり、将来の投資成果を保証するものではありません。<br>
+        © 2026 Money Advice Center — シミュレーションモデル解説 v1.0
+    </div>
+
+</body>
+
+</html>
