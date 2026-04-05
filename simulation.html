@@ -7,6 +7,7 @@
     <title>リスク・リターン シミュレーション | Money Advice Center</title>
     <meta name="description" content="投資のリスクとリターンを可視化するシミュレーションツール">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link
         href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Inter:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
@@ -508,6 +509,163 @@
             }
         }
 
+        /* PDF Button */
+        .btn-pdf {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.35);
+            color: var(--accent);
+            font-size: 0.8rem;
+            padding: 8px 18px;
+        }
+
+        .btn-pdf:hover {
+            background: rgba(99, 102, 241, 0.2);
+            transform: translateY(-1px);
+        }
+
+        /* PDF Target */
+        #sim-pdf-target {
+            display: none;
+            background: #ffffff;
+            color: #1a1a1a;
+            font-family: 'Noto Sans JP', sans-serif;
+            padding: 28px 32px;
+            width: 794px;
+        }
+
+        #sim-pdf-target .pdf-header-block {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 3px solid #6366f1;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+        }
+
+        #sim-pdf-target .pdf-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #6366f1;
+            margin-bottom: 3px;
+        }
+
+        #sim-pdf-target .pdf-subtitle {
+            font-size: 11px;
+            color: #6b7280;
+        }
+
+        #sim-pdf-target .pdf-date {
+            font-size: 10px;
+            color: #9ca3af;
+            text-align: right;
+        }
+
+        #sim-pdf-target .pdf-section-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: #4f46e5;
+            border-left: 3px solid #6366f1;
+            padding-left: 8px;
+            margin: 18px 0 10px;
+        }
+
+        #sim-pdf-target .pdf-params-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+            margin-bottom: 4px;
+        }
+
+        #sim-pdf-target .pdf-params-table td {
+            padding: 5px 10px;
+            border: 1px solid #e5e7eb;
+        }
+
+        #sim-pdf-target .pdf-params-table td:first-child {
+            background: #f3f4f6;
+            font-weight: 600;
+            color: #374151;
+            width: 38%;
+        }
+
+        #sim-pdf-target .pdf-params-table td:last-child {
+            color: #4f46e5;
+            font-weight: 700;
+            font-family: 'Inter', monospace;
+        }
+
+        #sim-pdf-target .pdf-chart-img {
+            width: 100%;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            margin-bottom: 4px;
+        }
+
+        #sim-pdf-target .pdf-stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+
+        #sim-pdf-target .pdf-stats-table th {
+            background: #4f46e5;
+            color: white;
+            padding: 6px 10px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        #sim-pdf-target .pdf-stats-table td {
+            padding: 5px 10px;
+            border: 1px solid #e5e7eb;
+            text-align: right;
+        }
+
+        #sim-pdf-target .pdf-stats-table td:first-child {
+            text-align: left;
+            background: #f9fafb;
+            font-weight: 600;
+        }
+
+        #sim-pdf-target .pdf-stats-table tr:nth-child(even) td {
+            background: #f3f4f6;
+        }
+
+        #sim-pdf-target .pdf-stats-table tr:nth-child(even) td:first-child {
+            background: #eff0f2;
+        }
+
+        #sim-pdf-target .pdf-disclaimer {
+            margin-top: 20px;
+            background: #fef9f0;
+            border: 1px solid #fed7aa;
+            border-left: 4px solid #f59e0b;
+            border-radius: 4px;
+            padding: 12px 14px;
+        }
+
+        #sim-pdf-target .pdf-disclaimer-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: #92400e;
+            margin-bottom: 6px;
+        }
+
+        #sim-pdf-target .pdf-disclaimer-text {
+            font-size: 10px;
+            color: #78350f;
+            line-height: 1.7;
+        }
+
+        #sim-pdf-target .pdf-footer {
+            margin-top: 14px;
+            text-align: center;
+            font-size: 9px;
+            color: #9ca3af;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 8px;
+        }
+
         /* DCA Mode */
         .btn-dca {
             background: rgba(245, 158, 11, 0.1);
@@ -606,6 +764,7 @@
         </div>
         <div style="display:flex;align-items:center;gap:12px">
             <button class="btn btn-dca" id="btn-dca-toggle" onclick="toggleDCA()">📅 積立モード</button>
+            <button class="btn btn-pdf" onclick="exportPDF()">📄 PDF出力</button>
             <a href="index.html" class="btn btn-home">🏠 ホームに戻る</a>
         </div>
     </div>
@@ -1148,7 +1307,115 @@
         window.addEventListener('DOMContentLoaded', () => {
             updateSimulation();
         });
+
+        // ========== PDF EXPORT ==========
+        function exportPDF() {
+            const mu      = parseFloat(document.getElementById('p-return').value);
+            const sigma   = parseFloat(document.getElementById('p-risk').value);
+            const P0      = parseFloat(document.getElementById('p-initial').value) || 1000;
+            const years   = parseInt(document.getElementById('p-period').value);
+            const kappa   = parseFloat(document.getElementById('p-kappa').value);
+            const geomPct = (mu / 100 - (sigma / 100) * (sigma / 100) / 2) * 100;
+            const dcaMonthly = dcaActive ? (parseFloat(document.getElementById('p-dca-monthly').value) || 0) : 0;
+
+            // ---- Chart image ----
+            const chartImg = document.getElementById('sim-chart').toDataURL('image/png', 1.0);
+
+            // ---- Parameters rows ----
+            let paramRows = `
+                <tr><td>期待リターン（算術平均）</td><td>${mu.toFixed(1)} %</td></tr>
+                <tr><td>幾何平均（中央値の年複利）</td><td>${geomPct.toFixed(2)} %</td></tr>
+                <tr><td>リスク（標準偏差）</td><td>${sigma.toFixed(1)} %</td></tr>
+                <tr><td>初期投資金額</td><td>${formatJPY(P0)} 万円</td></tr>
+                <tr><td>シミュレーション期間</td><td>${years} 年</td></tr>
+                <tr><td>平均回帰強度 κ</td><td>${kappa.toFixed(2)}</td></tr>`;
+            if (dcaActive && dcaMonthly > 0) {
+                paramRows += `
+                <tr><td>月額積立金額</td><td>${dcaMonthly} 万円/月</td></tr>
+                <tr><td>積立総額</td><td>${formatJPY(dcaMonthly * 12 * years)} 万円</td></tr>
+                <tr><td>累計投資額（元本合計）</td><td>${formatJPY(P0 + dcaMonthly * 12 * years)} 万円</td></tr>`;
+            }
+
+            // ---- Stats rows ----
+            const statsCards = document.querySelectorAll('#stats-grid .stat-card');
+            let statsRows = '';
+            statsCards.forEach(card => {
+                const label = card.querySelector('.stat-label')?.textContent.trim() || '';
+                const valEl = card.querySelector('.stat-value');
+                const valText = valEl ? valEl.textContent.trim() : '';
+                const sub = card.querySelector('.stat-sub')?.textContent.trim() || '';
+                statsRows += `<tr><td>${label}</td><td>${valText}</td><td>${sub}</td></tr>`;
+            });
+
+            // ---- Mode label ----
+            const modeLabel = (dcaActive && dcaMonthly > 0) ? '積立シミュレーション（積立モード）' : 'リスク・リターン シミュレーション';
+
+            // ---- Date ----
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
+
+            // ---- Build PDF HTML ----
+            const target = document.getElementById('sim-pdf-target');
+            target.innerHTML = `
+                <div class="pdf-header-block">
+                    <div>
+                        <div class="pdf-title">📈 ${modeLabel}</div>
+                        <div class="pdf-subtitle">Money Advice Center</div>
+                    </div>
+                    <div class="pdf-date">作成日：${dateStr}</div>
+                </div>
+
+                <div class="pdf-section-title">シミュレーションパラメータ</div>
+                <table class="pdf-params-table"><tbody>${paramRows}</tbody></table>
+
+                <div class="pdf-section-title">資産推移グラフ</div>
+                <img class="pdf-chart-img" src="${chartImg}" alt="chart">
+
+                <div class="pdf-section-title">シミュレーション結果</div>
+                <table class="pdf-stats-table">
+                    <thead>
+                        <tr>
+                            <th style="text-align:left">項目</th>
+                            <th>最終資産額</th>
+                            <th>補足</th>
+                        </tr>
+                    </thead>
+                    <tbody>${statsRows}</tbody>
+                </table>
+
+                <div class="pdf-disclaimer">
+                    <div class="pdf-disclaimer-title">■ 免責事項</div>
+                    <div class="pdf-disclaimer-text">
+                        本シミュレーションのいかなる内容も、将来の結果を予測し、保証するものではありません。<br>
+                        本シミュレーション及び掲載された情報を利用することで生じるいかなる損害（直接的、間接的を問わず）についても、当社が責任を負うものではありません。<br>
+                        実際の資産運用や投資判断に当たっては、必ずご自身の責任において最終的に判断してください。
+                    </div>
+                </div>
+
+                <div class="pdf-footer">
+                    本資料はシミュレーションであり、将来の運用成果を保証するものではありません。　作成：Money Advice Center
+                </div>`;
+
+            // ---- Generate PDF ----
+            target.style.display = 'block';
+            const filename = (dcaActive && dcaMonthly > 0)
+                ? `積立シミュレーション_${dateStr.replace(/年|月/g, '-').replace('日', '')}.pdf`
+                : `リスクリターンシミュレーション_${dateStr.replace(/年|月/g, '-').replace('日', '')}.pdf`;
+
+            html2pdf().set({
+                margin: [8, 8, 8, 8],
+                filename: filename,
+                image: { type: 'jpeg', quality: 0.97 },
+                html2canvas: { scale: 2, useCORS: true, logging: false },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            }).from(target).save().then(() => {
+                target.style.display = 'none';
+            });
+        }
     </script>
+
+    <!-- Hidden PDF target -->
+    <div id="sim-pdf-target"></div>
 </body>
 
 </html>
