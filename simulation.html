@@ -529,8 +529,9 @@
             background: #ffffff;
             color: #1a1a1a;
             font-family: 'Noto Sans JP', sans-serif;
-            padding: 28px 32px;
-            width: 794px;
+            padding: 16px 18px;
+            width: 700px;
+            box-sizing: border-box;
         }
 
         #sim-pdf-target .pdf-header-block {
@@ -1403,10 +1404,10 @@
                 : `リスクリターンシミュレーション_${dateStr.replace(/年|月/g, '-').replace('日', '')}.pdf`;
 
             html2pdf().set({
-                margin: [8, 8, 8, 8],
+                margin: [10, 10, 10, 10],
                 filename: filename,
                 image: { type: 'jpeg', quality: 0.97 },
-                html2canvas: { scale: 2, useCORS: true, logging: false },
+                html2canvas: { scale: 1.5, useCORS: true, logging: false, width: 700 },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
             }).from(target).save().then(() => {
                 target.style.display = 'none';
