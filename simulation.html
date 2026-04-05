@@ -508,6 +508,51 @@
             }
         }
 
+        /* DCA Mode */
+        .btn-dca {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.35);
+            color: var(--warning);
+            font-size: 0.8rem;
+            padding: 8px 18px;
+        }
+
+        .btn-dca:hover {
+            background: rgba(245, 158, 11, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .btn-dca.active {
+            background: rgba(245, 158, 11, 0.2);
+            border-color: rgba(245, 158, 11, 0.6);
+            box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);
+        }
+
+        .dca-param-section {
+            background: rgba(245, 158, 11, 0.05) !important;
+            border-color: rgba(245, 158, 11, 0.25) !important;
+        }
+
+        .dca-param-section:hover {
+            border-color: rgba(245, 158, 11, 0.45) !important;
+        }
+
+        .dca-param-section h4 {
+            color: var(--warning) !important;
+            -webkit-text-fill-color: var(--warning) !important;
+        }
+
+        .dca-total-note {
+            font-size: 0.72rem;
+            color: var(--warning);
+            background: rgba(245, 158, 11, 0.08);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            border-radius: 6px;
+            padding: 7px 10px;
+            margin-top: 10px;
+            line-height: 1.6;
+        }
+
         /* Animations */
         @keyframes fadeInUp {
             from {
@@ -559,7 +604,8 @@
             <h1>📈 リスク・リターン シミュレーション</h1>
             <div class="subtitle">Money Advice Center</div>
         </div>
-        <div>
+        <div style="display:flex;align-items:center;gap:12px">
+            <button class="btn btn-dca" id="btn-dca-toggle" onclick="toggleDCA()">📅 積立モード</button>
             <a href="index.html" class="btn btn-home">🏠 ホームに戻る</a>
         </div>
     </div>
@@ -654,6 +700,23 @@
                     <div class="input-suffix">0＝回帰なし（従来モデル）　大きいほど強い回帰</div>
                 </div>
             </div>
+
+            <!-- DCA Section (hidden by default) -->
+            <div class="param-section dca-param-section" id="dca-section" style="display:none">
+                <h4><span class="section-icon">📅</span>積立設定</h4>
+                <div class="param-group">
+                    <div class="param-label">
+                        <span>月額積立金額</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px">
+                        <input type="number" class="number-input" id="p-dca-monthly" value="10" min="0" step="1"
+                            oninput="updateSimulation()" style="flex:1">
+                        <span style="font-size:0.85rem;color:var(--text-muted);white-space:nowrap">万円/月</span>
+                    </div>
+                    <div class="input-suffix" style="margin-top:6px">期間・年率は上記パラメータを使用</div>
+                    <div class="dca-total-note" id="dca-total-note">—</div>
+                </div>
+            </div>
         </div>
 
         <!-- Main Content -->
@@ -662,7 +725,7 @@
             <!-- Chart -->
             <div class="chart-card">
                 <h2>📉 資産推移シミュレーション</h2>
-                <p class="chart-subtitle">対数正規分布＋平均回帰モデルに基づく期待値と信頼区間（±1σ, ±2σ）　※中央値の年複利＝算術平均リターン − σ²/2</p>
+                <p class="chart-subtitle" id="chart-subtitle-text">対数正規分布＋平均回帰モデルに基づく期待値と信頼区間（±1σ, ±2σ）　※中央値の年複利＝算術平均リターン − σ²/2</p>
                 <div class="chart-wrapper">
                     <canvas id="sim-chart"></canvas>
                 </div>
@@ -684,6 +747,7 @@
     <script>
         // ========== STATE ==========
         let chartInstance = null;
+        let dcaActive = false;
 
         // ========== SIMULATION MODEL ==========
         // Log-normal + Mean Reversion (Ornstein-Uhlenbeck) model:
@@ -697,7 +761,7 @@
         //
         // +nσ: P0 * exp((mu - sigma^2/2) * t + n * σ_eff(t))
         // -nσ: P0 * exp((mu - sigma^2/2) * t - n * σ_eff(t))
-        function calculateScenarios(P0, mu, sigma, years, kappa) {
+        function calculateScenarios(P0, mu, sigma, years, kappa, dcaMonthly) {
             const data = {
                 labels: [],
                 median: [],
@@ -705,9 +769,11 @@
                 plus2: [], minus2: []
             };
 
+            const driftRate = mu - (sigma * sigma) / 2;
+
             for (let t = 0; t <= years; t++) {
                 data.labels.push(`${t}年目`);
-                const drift = (mu - (sigma * sigma) / 2) * t;
+                const drift = driftRate * t;
 
                 // Effective cumulative volatility with mean reversion
                 let sigmaEff;
@@ -719,11 +785,22 @@
                     sigmaEff = sigma * Math.sqrt((1 - Math.exp(-2 * kappa * t)) / (2 * kappa));
                 }
 
-                data.median.push(P0 * Math.exp(drift));
-                data.plus1.push(P0 * Math.exp(drift + sigmaEff));
-                data.minus1.push(P0 * Math.exp(drift - sigmaEff));
-                data.plus2.push(P0 * Math.exp(drift + 2 * sigmaEff));
-                data.minus2.push(P0 * Math.exp(drift - 2 * sigmaEff));
+                // DCA component: continuous approximation using median drift rate
+                // DCA(t) ≈ C×12 × (exp(driftRate×t) − 1) / driftRate
+                let dcaVal = 0;
+                if (dcaMonthly > 0 && t > 0) {
+                    if (Math.abs(driftRate) < 0.0001) {
+                        dcaVal = dcaMonthly * 12 * t;
+                    } else {
+                        dcaVal = dcaMonthly * 12 * (Math.exp(driftRate * t) - 1) / driftRate;
+                    }
+                }
+
+                data.median.push(P0 * Math.exp(drift) + dcaVal);
+                data.plus1.push(P0 * Math.exp(drift + sigmaEff) + dcaVal);
+                data.minus1.push(P0 * Math.exp(drift - sigmaEff) + dcaVal);
+                data.plus2.push(P0 * Math.exp(drift + 2 * sigmaEff) + dcaVal);
+                data.minus2.push(P0 * Math.exp(drift - 2 * sigmaEff) + dcaVal);
             }
 
             return data;
@@ -903,6 +980,19 @@
             return Math.round(n).toLocaleString('ja-JP');
         }
 
+        // ========== DCA TOGGLE ==========
+        function toggleDCA() {
+            dcaActive = !dcaActive;
+            const btn = document.getElementById('btn-dca-toggle');
+            const section = document.getElementById('dca-section');
+            btn.classList.toggle('active', dcaActive);
+            btn.innerHTML = dcaActive
+                ? '📅 積立モード <span style="font-size:0.72em;opacity:0.85">ON</span>'
+                : '📅 積立モード';
+            section.style.display = dcaActive ? '' : 'none';
+            updateSimulation();
+        }
+
         // ========== SYNC PARAM (slider <-> number input) ==========
         function setSimParam(id, val) {
             const r = document.getElementById('p-' + id);
@@ -932,8 +1022,29 @@
             const geomPct = (mu - sigma * sigma / 2) * 100;
             document.getElementById('geom-return-val').textContent = geomPct.toFixed(2) + '%';
 
+            // DCA
+            const dcaMonthly = dcaActive ? (parseFloat(document.getElementById('p-dca-monthly').value) || 0) : 0;
+
+            // Update DCA total note
+            if (dcaActive) {
+                const totalDCA = dcaMonthly * 12 * years;
+                const totalInvested = P0 + totalDCA;
+                document.getElementById('dca-total-note').textContent =
+                    `累計投資額：${formatJPY(P0)}（初期）＋ ${formatJPY(totalDCA)}（積立）＝ ${formatJPY(totalInvested)} 万円`;
+            }
+
+            // Update chart subtitle
+            const subtitle = document.getElementById('chart-subtitle-text');
+            if (dcaActive && dcaMonthly > 0) {
+                subtitle.textContent = `対数正規分布＋平均回帰モデル（月額積立 ${dcaMonthly}万円/月 含む）`;
+            } else if (dcaActive) {
+                subtitle.textContent = `対数正規分布＋平均回帰モデル（積立モード：月額積立金額を入力してください）`;
+            } else {
+                subtitle.textContent = '対数正規分布＋平均回帰モデルに基づく期待値と信頼区間（±1σ, ±2σ）　※中央値の年複利＝算術平均リターン − σ²/2';
+            }
+
             // Calculate and render
-            const data = calculateScenarios(P0, mu, sigma, years, kappa);
+            const data = calculateScenarios(P0, mu, sigma, years, kappa, dcaMonthly);
             renderChart(data);
             renderStats(data);
         }
