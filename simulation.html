@@ -766,7 +766,8 @@
                 labels: [],
                 median: [],
                 plus1: [], minus1: [],
-                plus2: [], minus2: []
+                plus2: [], minus2: [],
+                principal: []
             };
 
             const driftRate = mu - (sigma * sigma) / 2;
@@ -778,10 +779,8 @@
                 // Effective cumulative volatility with mean reversion
                 let sigmaEff;
                 if (kappa < 0.001) {
-                    // κ≈0: no mean reversion, standard random walk
                     sigmaEff = sigma * Math.sqrt(t);
                 } else {
-                    // Ornstein-Uhlenbeck: σ * sqrt((1 - e^(-2κt)) / (2κ))
                     sigmaEff = sigma * Math.sqrt((1 - Math.exp(-2 * kappa * t)) / (2 * kappa));
                 }
 
@@ -795,6 +794,9 @@
                         dcaVal = dcaMonthly * 12 * (Math.exp(driftRate * t) - 1) / driftRate;
                     }
                 }
+
+                // Principal: initial investment + accumulated DCA contributions (no growth)
+                data.principal.push(P0 + dcaMonthly * 12 * t);
 
                 data.median.push(P0 * Math.exp(drift) + dcaVal);
                 data.plus1.push(P0 * Math.exp(drift + sigmaEff) + dcaVal);
@@ -810,9 +812,109 @@
         function renderChart(data) {
             const canvas = document.getElementById('sim-chart');
             const ctx = canvas.getContext('2d');
-
             if (chartInstance) chartInstance.destroy();
 
+            const xTickCallback = function (value, index) {
+                const period = parseInt(document.getElementById('p-period').value);
+                if (period <= 10) return this.getLabelForValue(value);
+                if (period <= 20) return index % 2 === 0 ? this.getLabelForValue(value) : '';
+                if (period <= 35) return index % 5 === 0 ? this.getLabelForValue(value) : '';
+                return index % 10 === 0 ? this.getLabelForValue(value) : '';
+            };
+
+            const commonScales = {
+                x: {
+                    ticks: { color: '#9ca3af', font: { size: 10 }, maxRotation: 0, callback: xTickCallback },
+                    grid: { color: 'rgba(0,0,0,0.06)' }
+                },
+                y: {
+                    ticks: { color: '#9ca3af', font: { size: 10 }, callback: v => formatJPY(v) + '万円' },
+                    grid: { color: 'rgba(0,0,0,0.08)' }
+                }
+            };
+
+            // ---- DCA MODE: stacked area (元本 + 運用収益) ----
+            const dcaMonthly = dcaActive ? (parseFloat(document.getElementById('p-dca-monthly').value) || 0) : 0;
+            if (dcaActive && dcaMonthly > 0) {
+                chartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.labels,
+                        datasets: [
+                            {
+                                label: '元本（初期投資＋積立累計）',
+                                data: data.principal,
+                                borderColor: 'rgba(99,102,241,0.9)',
+                                backgroundColor: 'rgba(99,102,241,0.18)',
+                                borderWidth: 2,
+                                pointRadius: 0,
+                                pointHoverRadius: 5,
+                                fill: 'origin',
+                                tension: 0.4,
+                                order: 2
+                            },
+                            {
+                                label: '運用収益（中央値）',
+                                data: data.median,
+                                borderColor: 'rgba(22,163,74,0.9)',
+                                backgroundColor: 'rgba(22,163,74,0.22)',
+                                borderWidth: 2,
+                                pointRadius: 0,
+                                pointHoverRadius: 5,
+                                fill: '-1',
+                                tension: 0.4,
+                                order: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    color: '#4b5563',
+                                    font: { size: 11, family: "'Noto Sans JP', sans-serif" },
+                                    usePointStyle: true,
+                                    pointStyle: 'rectRounded',
+                                    padding: 20
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(255,255,255,0.98)',
+                                titleColor: '#1f2937',
+                                bodyColor: '#4b5563',
+                                borderColor: 'rgba(99,102,241,0.3)',
+                                borderWidth: 1,
+                                padding: 14,
+                                bodyFont: { family: "'Inter', monospace" },
+                                callbacks: {
+                                    label: function (ctx) {
+                                        const t = ctx.dataIndex;
+                                        const principal = data.principal[t];
+                                        const total = data.median[t];
+                                        const gains = total - principal;
+                                        if (ctx.datasetIndex === 0) {
+                                            return `  元本: ${formatJPY(principal)}万円`;
+                                        }
+                                        return [
+                                            `  運用収益: ${formatJPY(gains)}万円`,
+                                            `  ─────────────────`,
+                                            `  総資産: ${formatJPY(total)}万円`
+                                        ];
+                                    }
+                                }
+                            }
+                        },
+                        scales: commonScales
+                    }
+                });
+                return;
+            }
+
+            // ---- NORMAL MODE: σ lines ----
             chartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -884,10 +986,7 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    interaction: {
-                        mode: 'index',
-                        intersect: false
-                    },
+                    interaction: { mode: 'index', intersect: false },
                     plugins: {
                         legend: {
                             position: 'top',
@@ -914,32 +1013,7 @@
                             }
                         }
                     },
-                    scales: {
-                        x: {
-                            ticks: {
-                                color: '#9ca3af',
-                                font: { size: 10 },
-                                maxRotation: 0,
-                                callback: function (value, index) {
-                                    const period = parseInt(document.getElementById('p-period').value);
-                                    // Show fewer labels for long periods
-                                    if (period <= 10) return this.getLabelForValue(value);
-                                    if (period <= 20) return index % 2 === 0 ? this.getLabelForValue(value) : '';
-                                    if (period <= 35) return index % 5 === 0 ? this.getLabelForValue(value) : '';
-                                    return index % 10 === 0 ? this.getLabelForValue(value) : '';
-                                }
-                            },
-                            grid: { color: 'rgba(0,0,0,0.06)' }
-                        },
-                        y: {
-                            ticks: {
-                                color: '#9ca3af',
-                                font: { size: 10 },
-                                callback: v => formatJPY(v) + '万円'
-                            },
-                            grid: { color: 'rgba(0,0,0,0.08)' }
-                        }
-                    }
+                    scales: commonScales
                 }
             });
         }
@@ -947,29 +1021,50 @@
         // ========== STATS ==========
         function renderStats(data) {
             const years = data.labels.length - 1;
-            const P0 = data.median[0];
-            const finalMedian = data.median[years];
-            const finalPlus1 = data.plus1[years];
-            const finalMinus1 = data.minus1[years];
-            const finalPlus2 = data.plus2[years];
-            const finalMinus2 = data.minus2[years];
+            const grid = document.getElementById('stats-grid');
 
+            // ---- DCA MODE ----
+            const dcaMonthly = dcaActive ? (parseFloat(document.getElementById('p-dca-monthly').value) || 0) : 0;
+            if (dcaActive && dcaMonthly > 0) {
+                const initialP0  = data.principal[0];
+                const totalInvested = data.principal[years];
+                const totalAsset = data.median[years];
+                const gains = totalAsset - totalInvested;
+                const dcaTotal = totalInvested - initialP0;
+
+                const stats = [
+                    { cls: 'median', label: '最終総資産（中央値）',   value: totalAsset,   sub: `元本比: ${(totalAsset / totalInvested).toFixed(2)}x` },
+                    { cls: 'plus2',  label: '運用収益（中央値）',     value: gains,        sub: `収益率: +${((gains / totalInvested) * 100).toFixed(1)}%` },
+                    { cls: '',       label: '元本合計（累計投資額）',  value: totalInvested, sub: `初期 ＋ 積立` },
+                    { cls: '',       label: '初期投資額',             value: initialP0,    sub: '一括投資分' },
+                    { cls: '',       label: '積立総額',               value: dcaTotal,     sub: `${dcaMonthly}万円 × ${years * 12}ヶ月` }
+                ];
+
+                grid.innerHTML = stats.map(s => `
+    <div class="stat-card ${s.cls}">
+      <div class="stat-label">${s.label}</div>
+      <div class="stat-value">${formatJPY(s.value)}<span style="font-size:0.7rem;font-weight:400;color:var(--text-muted)">万円</span></div>
+      <div class="stat-sub">${s.sub}</div>
+    </div>`).join('');
+                return;
+            }
+
+            // ---- NORMAL MODE ----
+            const P0 = data.median[0];
             const stats = [
-                { cls: 'plus2', label: '+2σ シナリオ', value: finalPlus2, sub: `倍率: ${(finalPlus2 / P0).toFixed(2)}x` },
-                { cls: 'plus1', label: '+1σ シナリオ', value: finalPlus1, sub: `倍率: ${(finalPlus1 / P0).toFixed(2)}x` },
-                { cls: 'median', label: '期待値（中央値）', value: finalMedian, sub: `倍率: ${(finalMedian / P0).toFixed(2)}x` },
-                { cls: 'minus1', label: '−1σ シナリオ', value: finalMinus1, sub: `倍率: ${(finalMinus1 / P0).toFixed(2)}x` },
-                { cls: 'minus2', label: '−2σ シナリオ', value: finalMinus2, sub: `倍率: ${(finalMinus2 / P0).toFixed(2)}x` }
+                { cls: 'plus2',  label: '+2σ シナリオ',    value: data.plus2[years],  sub: `倍率: ${(data.plus2[years]  / P0).toFixed(2)}x` },
+                { cls: 'plus1',  label: '+1σ シナリオ',    value: data.plus1[years],  sub: `倍率: ${(data.plus1[years]  / P0).toFixed(2)}x` },
+                { cls: 'median', label: '期待値（中央値）', value: data.median[years], sub: `倍率: ${(data.median[years] / P0).toFixed(2)}x` },
+                { cls: 'minus1', label: '−1σ シナリオ',   value: data.minus1[years], sub: `倍率: ${(data.minus1[years] / P0).toFixed(2)}x` },
+                { cls: 'minus2', label: '−2σ シナリオ',   value: data.minus2[years], sub: `倍率: ${(data.minus2[years] / P0).toFixed(2)}x` }
             ];
 
-            const grid = document.getElementById('stats-grid');
             grid.innerHTML = stats.map(s => `
     <div class="stat-card ${s.cls}">
       <div class="stat-label">${s.label}</div>
       <div class="stat-value">${formatJPY(s.value)}<span style="font-size:0.7rem;font-weight:400;color:var(--text-muted)">万円</span></div>
       <div class="stat-sub">${s.sub}</div>
-    </div>
-  `).join('');
+    </div>`).join('');
         }
 
         // ========== HELPERS ==========
